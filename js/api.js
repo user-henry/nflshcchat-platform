@@ -619,8 +619,8 @@
             username: firstOf(b, ['username', 'user']) || '',
             nickname: firstOf(b, ['nickname']) || '',
             reason: firstOf(b, ['reason', 'banReason']) || '',
-            bannedAt: firstOf(b, ['bannedAt', 'createdAt', 'time', 'bannedTime']) || '',
-            bannedBy: firstOf(b, ['bannedBy', 'operator', 'by']) || '',
+            bannedAt: firstOf(b, ['bannedAt', 'banned_at', 'createdAt', 'time', 'bannedTime']) || '',
+            bannedBy: firstOf(b, ['bannedBy', 'banned_by', 'operator', 'by']) || '',
             clientId: firstOf(b, ['clientId', 'client_id']) || ''
         };
     }
@@ -638,14 +638,16 @@
         return {
             id: firstOf(r, ['id', 'requestId', '_id', 'request_id']) || '',
             clientId: firstOf(r, ['clientId', 'client_id', 'appId']) || '',
-            clientName: firstOf(r, ['clientName', 'appName', 'name']) || '',
+            clientName: firstOf(r, ['clientName', 'client_name', 'appName', 'name']) || '',
             username: firstOf(r, ['username', 'targetUser', 'user']) || '',
             reason: firstOf(r, ['reason', 'banReason', 'content']) || '',
             status: status,
             statusText: STATUS_MAP[status] || status,
-            note: firstOf(r, ['note', 'adminNote', 'reviewNote', 'remark', 'admin_remark']) || '',
+            note: firstOf(r, ['note', 'adminNote', 'reviewNote', 'review_note', 'remark', 'admin_remark']) || '',
             createdAt: firstOf(r, ['createdAt', 'submittedAt', 'created_at', 'time', 'timestamp']) || '',
-            reviewedAt: firstOf(r, ['reviewedAt', 'handledAt', 'updatedAt']) || ''
+            reviewedAt: firstOf(r, ['reviewedAt', 'reviewed_at', 'handledAt', 'updatedAt']) || '',
+            reviewer: firstOf(r, ['reviewer', 'reviewedBy']) || '',
+            applicant: firstOf(r, ['applicant', 'applicantUser']) || ''
         };
     }
 
