@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffd700">
+    <title>接入指南 · NFLSHC 开放平台</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/themes.css">
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Verdana, sans-serif;
+            background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background .4s, color .3s;
+        }
+        .container { max-width: 1080px; margin: 0 auto; padding: 26px 20px 80px; }
+
+        .page-head { margin-bottom: 20px; }
+        .page-title {
+            font-size: 27px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-sub { color: var(--text-muted); font-size: 13.5px; margin-top: 7px; line-height: 1.8; }
+
+        .toc { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 24px; }
+        .toc a {
+            font-size: 13px; padding: 7px 14px; border-radius: 999px; text-decoration: none;
+            border: 1px solid var(--border-color); color: var(--text-secondary);
+            transition: all .2s ease;
+        }
+        .toc a:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-1px); }
+
+        .card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 18px;
+            padding: 24px; box-shadow: 0 14px 40px rgba(0,0,0,.2); margin-bottom: 22px;
+            scroll-margin-top: 80px;
+        }
+        .card-title { font-size: 18px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .card-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.8; margin-bottom: 18px; }
+
+        p { font-size: 14px; line-height: 1.9; color: var(--text-secondary); }
+        a { color: var(--accent-color); }
+        code:not(pre code) {
+            font-family: "Consolas", "Courier New", monospace; font-size: 13px;
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 1px 6px; color: var(--accent-color);
+        }
+        ul, ol { margin: 12px 0 12px 22px; }
+        li { font-size: 14px; line-height: 1.9; color: var(--text-secondary); margin-bottom: 6px; }
+        li b, p b { color: var(--text-primary); }
+
+        .steps { display: flex; flex-direction: column; gap: 12px; counter-reset: step; }
+        .step { display: flex; gap: 14px; padding: 15px 17px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 14px; transition: border-color .22s ease, transform .22s ease; }
+        .step:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .step-num {
+            flex: none; width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: #1a1a2e;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+        }
+        .step-body { flex: 1; min-width: 0; }
+        .step-title { font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
+        .step-text { font-size: 13px; line-height: 1.85; color: var(--text-secondary); }
+
+        pre {
+            background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 14px;
+            padding: 16px 18px; overflow-x: auto; margin: 0;
+            font-family: "Consolas", "Courier New", monospace; font-size: 12.8px; line-height: 1.75;
+            color: var(--text-primary); white-space: pre; tab-size: 2;
+        }
+        pre.diagram { color: var(--text-secondary); font-size: 12.4px; }
+
+        .code-block { margin: 16px 0; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-tertiary); }
+        .code-block pre { border: none; border-radius: 0; max-height: 560px; overflow: auto; }
+        .code-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 9px 14px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);
+        }
+        .code-lang { font-size: 12.5px; color: var(--text-muted); letter-spacing: .04em; }
+        .copy-code {
+            appearance: none; cursor: pointer; font: inherit; font-size: 12.5px;
+            padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border-color);
+            background: transparent; color: var(--text-secondary);
+            transition: all .2s ease;
+        }
+        .copy-code:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-1px); }
+        .copy-code.done { border-color: var(--success); color: var(--success); }
+
+        .table-wrap { overflow-x: auto; border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        th {
+            text-align: left; padding: 11px 13px; font-size: 11.5px; letter-spacing: .07em;
+            text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color); white-space: nowrap;
+        }
+        td { padding: 12px 13px; border-bottom: 1px solid var(--border-color); vertical-align: top; line-height: 1.75; }
+        tbody tr { transition: background .2s ease; }
+        tbody tr:hover { background: var(--hover-bg); }
+        tbody tr:last-child td { border-bottom: none; }
+        .mono { font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border-color); color: var(--text-secondary); white-space: nowrap; }
+        .badge-ok { color: var(--success); border-color: var(--success); background: rgba(40,167,69,.1); }
+        .badge-danger { color: var(--danger); border-color: var(--danger); background: rgba(220,53,69,.1); }
+        .badge-warn { color: var(--warning); border-color: var(--warning); background: rgba(243,156,18,.1); }
+        .badge-muted { color: var(--text-muted); }
+
+        .notice { display: flex; gap: 10px; padding: 14px 16px; border-radius: 13px; background: var(--accent-color-alpha); border: 1px solid var(--border-color); font-size: 13px; color: var(--text-secondary); line-height: 1.85; margin: 16px 0; }
+        .notice.warn { background: rgba(243,156,18,.1); border-color: var(--warning); }
+        .notice.danger { background: rgba(220,53,69,.1); border-color: var(--danger); }
+        .notice b { color: var(--accent-color); }
+        .notice.warn b { color: var(--warning); }
+        .notice.danger b { color: var(--danger); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-head">
+            <h1 class="page-title">接入指南</h1>
+            <p class="page-sub">
+                面向开发者：把「使用 NFLSHC 账号登录」接入到你的项目。所有示例代码均可一键复制，
+                只替换 <code>client_id</code> / <code>client_secret</code> / 回调地址即可跑通。
+            </p>
+        </div>
+
+        <nav class="toc">
+            <a href="#flow">① 授权流程</a>
+            <a href="#config">② 在 platform 配置</a>
+            <a href="#scopes">③ 权限 scope</a>
+            <a href="#code">④ 示例代码</a>
+            <a href="#check">⑤ 校验端口</a>
+            <a href="#errors">⑥ 错误码</a>
+            <a href="#security">⑦ 安全建议</a>
+        </nav>
+
+        <div class="card" id="flow">
+            <h2 class="card-title">① 授权流程（Authorization Code Flow）</h2>
+            <p class="card-desc">NFLSHC 开放平台使用标准授权码模式：授权码 5 分钟有效且只能用一次，访问令牌 2 小时有效，刷新令牌 30 天有效。</p>
+
+            <pre class="diagram">
+┌──────────┐     ① 跳转授权页      ┌────────────────────────────┐
+│ 开发者应用 │ ───────────────────▶ │ accounts.nflshcchat.cc.cd  │
+│ (你的网站) │                      │  用户登录 → 查看权限 → 同意 │
+└──────────┘                      └────────────────────────────┘
+      ▲                                         │
+      │ ③ 回跳 ?code=xxx&amp;state=yyy               │ ② 用户同意
+      └─────────────────────────────────────────┘
+      │
+      │ ④ 服务端 POST /api/oauth/token（code + client_secret）
+      ▼
+┌──────────────────────────┐   ⑤ GET /api/oauth/userinfo (Bearer access_token)
+│ worker.nflshcchat.cc.cd  │ ◀───────────────────────────────────
+└──────────────────────────┘
+</pre>
+
+            <div class="steps" style="margin-top:18px">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-body">
+                        <div class="step-title">把用户引导到授权中心</div>
+                        <div class="step-text">
+                            拼接授权地址并跳转，<code>redirect_uri</code> 必须与登记值<b>完全一致</b>，<code>state</code> 用于防 CSRF，回跳时会原样返回：
+                            <div class="code-block" style="margin-top:10px">
+                                <div class="code-head">
+                                    <span class="code-lang">授权地址模板</span>
+                                    <button type="button" class="copy-code" data-target="code-authorize-url">复制</button>
+                                </div>
+                                <pre><code id="code-authorize-url">https://accounts.nflshcchat.cc.cd/authorize.html
+  ?client_id=nac_xxxxxxxx
+  &amp;redirect_uri=https://你的站点/callback
+  &amp;scope=profile email
+  &amp;state=随机防CSRF字符串</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-body">
+                        <div class="step-title">用户同意后回跳</div>
+                        <div class="step-text">
+                            成功：<code>https://你的站点/callback?code=naco_xxxxxxxx&amp;state=…</code><br>
+                            用户拒绝：<code>…?error=access_denied&amp;error_description=用户拒绝了授权&amp;state=…</code><br>
+                            请务必校验 <code>state</code> 与发起时一致，否则直接拒绝该次回调。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-body">
+                        <div class="step-title">服务端用 code 换取令牌</div>
+                        <div class="step-text">
+                            <code>POST https://worker.nflshcchat.cc.cd/api/oauth/token</code>，body 为
+                            <code>{ grant_type, code, client_id, client_secret, redirect_uri }</code>；
+                            返回 <code>access_token</code> / <code>refresh_token</code> / <code>expires_in</code> / <code>scope</code>。
+                            <b>此步骤必须在服务端完成，client_secret 绝不可出现在前端。</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-body">
+                        <div class="step-title">读取用户信息</div>
+                        <div class="step-text">
+                            <code>GET /api/oauth/userinfo</code>，Header 携带 <code>Authorization: Bearer &lt;access_token&gt;</code>。
+                            只会返回你申请并且用户同意的 scope 范围内的字段，<b>密码与密码哈希永远不会返回</b>。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">5</div>
+                    <div class="step-body">
+                        <div class="step-title">刷新 / 吊销令牌</div>
+                        <div class="step-text">
+                            刷新：<code>POST /api/oauth/token</code> + <code>{ grant_type: "refresh_token", refresh_token, client_id, client_secret }</code><br>
+                            吊销：<code>POST /api/oauth/revoke</code> + <code>{ client_id, client_secret, token }</code>；
+                            用户在 <code>accounts.nflshcchat.cc.cd/apps.html</code> 撤销授权后，相关令牌立即失效。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="config">
+            <h2 class="card-title">② 在 platform 配置应用</h2>
+            <p class="card-desc">开发者平台（本站点）用于创建与管理你的 OAuth 应用。</p>
+            <ol>
+                <li>用你的 nflshcchat 账号登录 <a href="index.html">开发者登录页</a>（密码在浏览器内做 SHA-256 哈希后再提交）。</li>
+                <li>进入 <a href="dashboard.html">应用管理</a>，点击「创建应用」，填写应用名称、简介、主页与图标。</li>
+                <li>登记<b>回调地址</b>（每行一个，需 http/https 开头）：授权回跳时地址必须与登记值完全一致，否则返回 <code>invalid_redirect_uri</code>。</li>
+                <li>勾选需要的<b>权限范围（scope）</b>，用户会在授权页逐项看到并可拒绝敏感权限。</li>
+                <li>创建成功后<b>立即保存 client_secret</b>——它只显示这一次，服务端只存哈希，关闭弹窗后无法再查看，只能重置。</li>
+                <li>把 <code>client_id</code> 与 <code>client_secret</code> 写入你服务端的环境变量 / 配置文件，然后按下面的示例代码接入。</li>
+                <li>在 <a href="app.html">应用详情</a> 页可以随时编辑信息、<b>重置密钥</b>（旧密钥立即失效）、查看授权用户与提交全站封禁申请。</li>
+            </ol>
+            <div class="notice">
+                <span>💡</span>
+                <div>调试阶段建议先只申请 <code>profile</code>，跑通后再按需增加 <code>email</code> / <code>messages</code> 等敏感权限，用户更容易点「同意」。</div>
+            </div>
+        </div>
+
+        <div class="card" id="scopes">
+            <h2 class="card-title">③ 可用权限（scope）</h2>
+            <p class="card-desc">下表中 <span class="badge badge-warn">敏感</span> 的权限会在授权页向用户高亮提示，用户可以拒绝或只授权其中一部分。</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>key</th><th>名称</th><th>包含字段</th><th>敏感</th></tr>
+                    </thead>
+                    <tbody id="scopeTbody">
+                        <tr><td colspan="4" style="color:var(--text-muted)">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin-top:12px;font-size:12.5px;color:var(--text-muted)">
+                该列表也可通过 <code>GET /api/oauth/scopes</code> 实时获取。未申请任何权限时授权请求会返回 <code>invalid_scope</code>。
+            </p>
+        </div>
+
+        <div class="card" id="code">
+            <h2 class="card-title">④ 示例代码（一键复制）</h2>
+            <p class="card-desc">
+                示例与平台 API 契约完全一致。把 <code>nac_你的应用ID</code>、<code>nacs_你的密钥</code>、<code>https://你的站点/callback</code>
+                替换成你在平台里登记的真实值即可运行。
+            </p>
+            <div class="notice warn">
+                <span>⚠️</span>
+                <div>示例中的 <code>state=xyz</code> 只是占位，正式项目请生成随机值并在回调时校验，防止 CSRF 攻击。</div>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">Node.js / Express</span>
+                    <button type="button" class="copy-code" data-target="code-node">复制</button>
+                </div>
+                <pre><code id="code-node">const express = require('express');
+const app = express();
+
+const CLIENT_ID = 'nac_你的应用ID';
+const CLIENT_SECRET = 'nacs_你的密钥';
+const REDIRECT_URI = 'https://你的站点/callback';
+const API = 'https://worker.nflshcchat.cc.cd';
+
+// ① 跳转授权中心
+app.get('/login', (req, res) =&gt; {
+  const state = Math.random().toString(36).slice(2);
+  req.session = req.session || {};
+  res.redirect(`${API.replace('worker', 'accounts')}/authorize.html` +
+    `?client_id=${CLIENT_ID}&amp;redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&amp;scope=${encodeURIComponent('profile email')}&amp;state=${state}`);
+});
+
+// ② 回调：换令牌 + 读用户信息
+app.get('/callback', async (req, res) =&gt; {
+  const { code } = req.query;
+  const tokenRes = await fetch(`${API}/api/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'authorization_code', code,
+      client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uri: REDIRECT_URI
+    })
+  });
+  const tokens = await tokenRes.json();
+  const infoRes = await fetch(`${API}/api/oauth/userinfo`, {
+    headers: { Authorization: 'Bearer ' + tokens.access_token }
+  });
+  const user = await infoRes.json();
+  res.send(`欢迎，${user.nickname || user.username}！`);
+});
+
+// ③ 校验用户是否被你在项目内封禁
+async function checkBan(username) {
+  const r = await fetch(`${API}/api/oauth/check`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, username })
+  });
+  return r.json(); // { granted, banned, reason }
+}
+
+app.listen(3000);</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">Python / Flask</span>
+                    <button type="button" class="copy-code" data-target="code-python">复制</button>
+                </div>
+                <pre><code id="code-python">import requests
+from flask import Flask, redirect, request
+
+app = Flask(__name__)
+CLIENT_ID = 'nac_你的应用ID'
+CLIENT_SECRET = 'nacs_你的密钥'
+REDIRECT_URI = 'https://你的站点/callback'
+API = 'https://worker.nflshcchat.cc.cd'
+ACCOUNTS = 'https://accounts.nflshcchat.cc.cd'
+
+@app.route('/login')
+def login():
+    # ① 跳转授权中心
+    return redirect(f'{ACCOUNTS}/authorize.html?client_id={CLIENT_ID}'
+                    f'&amp;redirect_uri={REDIRECT_URI}&amp;scope=profile%20email&amp;state=xyz')
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    # ② 换令牌
+    tokens = requests.post(f'{API}/api/oauth/token', json={
+        'grant_type': 'authorization_code', 'code': code,
+        'client_id': CLIENT_ID, 'client_secret': CLIENT_SECRET,
+        'redirect_uri': REDIRECT_URI,
+    }).json()
+    # ③ 读用户信息
+    user = requests.get(f'{API}/api/oauth/userinfo',
+                        headers={'Authorization': f"Bearer {tokens['access_token']}"}).json()
+    return f"欢迎，{user.get('nickname') or user.get('username')}！"
+
+# ④ 校验项目内封禁
+def is_banned(username: str) -&gt; bool:
+    r = requests.post(f'{API}/api/oauth/check', json={
+        'client_id': CLIENT_ID, 'client_secret': CLIENT_SECRET, 'username': username,
+    }).json()
+    return bool(r.get('banned'))</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">PHP</span>
+                    <button type="button" class="copy-code" data-target="code-php">复制</button>
+                </div>
+                <pre><code id="code-php">&lt;?php
+const CLIENT_ID     = 'nac_你的应用ID';
+const CLIENT_SECRET = 'nacs_你的密钥';
+const REDIRECT_URI  = 'https://你的站点/callback';
+const API           = 'https://worker.nflshcchat.cc.cd';
+
+// ① 跳转授权中心
+if (isset($_GET['login'])) {
+    header('Location: https://accounts.nflshcchat.cc.cd/authorize.html?client_id=' . CLIENT_ID
+        . '&amp;redirect_uri=' . urlencode(REDIRECT_URI) . '&amp;scope=' . urlencode('profile email') . '&amp;state=xyz');
+    exit;
+}
+
+// ② 回调换令牌
+if (isset($_GET['code'])) {
+    $ch = curl_init(API . '/api/oauth/token');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER =&gt; true,
+        CURLOPT_POST =&gt; true,
+        CURLOPT_HTTPHEADER =&gt; ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS =&gt; json_encode([
+            'grant_type' =&gt; 'authorization_code',
+            'code' =&gt; $_GET['code'],
+            'client_id' =&gt; CLIENT_ID,
+            'client_secret' =&gt; CLIENT_SECRET,
+            'redirect_uri' =&gt; REDIRECT_URI,
+        ]),
+    ]);
+    $tokens = json_decode(curl_exec($ch), true);
+
+    // ③ 读取用户信息
+    $ch2 = curl_init(API . '/api/oauth/userinfo');
+    curl_setopt_array($ch2, [
+        CURLOPT_RETURNTRANSFER =&gt; true,
+        CURLOPT_HTTPHEADER =&gt; ['Authorization: Bearer ' . $tokens['access_token']],
+    ]);
+    $user = json_decode(curl_exec($ch2), true);
+    echo '欢迎，' . ($user['nickname'] ?? $user['username']);
+    exit;
+}</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">纯前端（仅演示）</span>
+                    <button type="button" class="copy-code" data-target="code-frontend">复制</button>
+                </div>
+                <pre><code id="code-frontend">&lt;script&gt;
+const CLIENT_ID = 'nac_你的应用ID';
+const REDIRECT_URI = location.origin + '/';
+function login() {
+  location.href = 'https://accounts.nflshcchat.cc.cd/authorize.html'
+    + '?client_id=' + CLIENT_ID
+    + '&amp;redirect_uri=' + encodeURIComponent(REDIRECT_URI)
+    + '&amp;scope=' + encodeURIComponent('profile')
+    + '&amp;state=' + Math.random().toString(36).slice(2);
+}
+&lt;/script&gt;
+&lt;button onclick="login()"&gt;使用 NFLSHC 账号登录&lt;/button&gt;</code></pre>
+            </div>
+
+            <div class="notice danger">
+                <span>🚫</span>
+                <div><b>浏览器端不要放 client_secret</b>（会泄露）。纯前端项目请把「换令牌」的逻辑放到自己的服务端或 Cloudflare Worker。</div>
+            </div>
+        </div>
+
+        <div class="card" id="check">
+            <h2 class="card-title">⑤ 校验端口：查询用户在你项目内的状态</h2>
+            <p class="card-desc">
+                服务端到服务端接口，用 client_secret 鉴权（不需要用户令牌），建议在用户每次调用你项目的高风险接口前调用一次。
+            </p>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">请求</span>
+                    <button type="button" class="copy-code" data-target="code-check-req">复制</button>
+                </div>
+                <pre><code id="code-check-req">POST https://worker.nflshcchat.cc.cd/api/oauth/check
+Content-Type: application/json
+
+{
+  "client_id": "nac_xxx",
+  "client_secret": "nacs_xxx",
+  "username": "someone"
+}</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">响应</span>
+                    <button type="button" class="copy-code" data-target="code-check-res">复制</button>
+                </div>
+                <pre><code id="code-check-res">{
+  "ok": true,
+  "username": "someone",
+  "granted": true,
+  "banned": false,
+  "reason": "",
+  "bannedAt": null
+}</code></pre>
+            </div>
+
+            <ul>
+                <li><code>granted</code>：该用户是否授权过你的应用（是否在你的管辖范围内）。</li>
+                <li><code>banned</code>：是否被你<b>在项目内</b>封禁；为 <code>true</code> 时 <code>reason</code> 是封禁原因。</li>
+                <li>业务建议：<code>granted=false</code> 时提示用户重新授权；<code>banned=true</code> 时拒绝服务并展示原因。</li>
+            </ul>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">curl 快速验证</span>
+                    <button type="button" class="copy-code" data-target="code-check-curl">复制</button>
+                </div>
+                <pre><code id="code-check-curl">curl -X POST https://worker.nflshcchat.cc.cd/api/oauth/check \
+  -H "Content-Type: application/json" \
+  -d '{"client_id":"nac_xxx","client_secret":"nacs_xxx","username":"someone"}'</code></pre>
+            </div>
+
+            <div class="notice">
+                <span>🛡️</span>
+                <div>
+                    <b>项目内封禁仅在你自己的项目内生效</b>：它只写入你的应用管辖范围，用户在主站不受影响。
+                    若需要<b>全站封禁</b>，请在<a href="app.html">应用详情</a>页提交申请并附详细理由，由主站管理员 <b>huangzhiyuan</b> 审核批准后执行。
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="errors">
+            <h2 class="card-title">⑥ 错误码</h2>
+            <p class="card-desc">接口返回 <code>{ "error": "…", "error_description": "…" }</code>，请按错误码给出准确提示。</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>error</th><th>含义</th><th>排查建议</th></tr></thead>
+                    <tbody>
+                        <tr><td class="mono">invalid_client</td><td>client_id / client_secret 不正确或应用被停用</td><td>到应用详情页重置密钥并更新服务端配置</td></tr>
+                        <tr><td class="mono">invalid_grant</td><td>code / refresh_token 无效、过期或已使用</td><td>授权码 5 分钟有效且只能用一次，重新走授权流程</td></tr>
+                        <tr><td class="mono">invalid_redirect_uri</td><td>回调地址未登记</td><td>与平台登记值做逐字符比对（含结尾斜杠、http/https）</td></tr>
+                        <tr><td class="mono">invalid_scope</td><td>未选择有效权限</td><td>在创建/编辑应用时至少勾选一个 scope</td></tr>
+                        <tr><td class="mono">access_denied</td><td>用户拒绝授权，或用户已撤销授权</td><td>提示用户重新授权</td></tr>
+                        <tr><td class="mono">invalid_token</td><td>访问令牌无效或已过期</td><td>用 refresh_token 刷新，或重新授权</td></tr>
+                        <tr><td class="mono">login_required</td><td>需要先登录 nflshcchat 账号</td><td>把用户引导到授权中心登录</td></tr>
+                        <tr><td class="mono">client_suspended</td><td>应用已被管理员停用</td><td>联系主站管理员处理</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" id="security">
+            <h2 class="card-title">⑦ 安全建议</h2>
+            <ul>
+                <li><b>开发者看不到密码</b>：任何接口都不返回 <code>password</code> / <code>password_hash</code>。</li>
+                <li><b>开发者不能操作主站账号</b>：项目内封禁只写入 <code>oauth_project_bans</code>，不影响用户在主站的状态；只有主站管理员能封禁/冻结主站账号。</li>
+                <li><b>敏感信息需用户明确授权</b>：<code>email</code>、<code>messages</code> 等敏感 scope 在授权页会高亮提示。</li>
+                <li><b>用户可随时撤销</b>：用户在 <code>accounts.nflshcchat.cc.cd/apps.html</code> 撤销授权后，相关令牌立即失效，你的服务端应处理 <code>invalid_token</code>。</li>
+                <li><b>回调地址白名单</b>：<code>redirect_uri</code> 必须与登记值完全一致，防止授权码被劫持。</li>
+                <li><b>密钥保管</b>：<code>client_secret</code> 只在创建/重置时返回一次；如疑似泄露请在平台立即重置。</li>
+                <li><b>全站封禁需人类审核</b>：开发者的封禁申请必须附带理由，由主站管理员核定后执行。</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ---------- 权限表格 ---------- */
+        var FALLBACK_ROWS = [
+            { key: 'profile', name: '基本资料', fields: 'username nickname avatarUrl bio xp isAdmin createdAt', sensitive: false },
+            { key: 'email', name: '邮箱地址', fields: 'email', sensitive: true },
+            { key: 'rooms', name: '群聊列表', fields: 'rooms[]（id / name / type）', sensitive: false },
+            { key: 'friends', name: '好友列表', fields: 'friends[]（用户名数组）', sensitive: false },
+            { key: 'messages', name: '消息内容', fields: 'messages[]（最近 50 条：id / roomId / content / timestamp）', sensitive: true },
+            { key: 'stats', name: '统计信息', fields: 'messageCount', sensitive: false }
+        ];
+        var FIELD_MAP = {};
+        FALLBACK_ROWS.forEach(function (r) { FIELD_MAP[r.key] = r; });
+
+        function renderScopeRows(scopes) {
+            var tbody = document.getElementById('scopeTbody');
+            tbody.innerHTML = scopes.map(function (s) {
+                var local = FIELD_MAP[s.key] || {};
+                var fields = local.fields || s.desc || '—';
+                var sensitive = (s.sensitive === true) || (local.sensitive === true);
+                return '<tr>' +
+                    '<td class="mono">' + escapeHtml(s.key) + '</td>' +
+                    '<td>' + escapeHtml(s.name || local.name || s.key) + '</td>' +
+                    '<td class="mono" style="color:var(--text-secondary)">' + escapeHtml(fields) + '</td>' +
+                    '<td>' + (sensitive ? '<span class="badge badge-warn">敏感</span>' : '<span class="badge badge-muted">普通</span>') + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        async function loadScopeTable() {
+            var scopes = null;
+            if (window.AuthToken && window.AuthToken.get()) {
+                try {
+                    var data = await apiGet('/api/oauth/scopes', { skipAuthRedirect: true });
+                    var list = PlatformUtil.pickArray(data, ['scopes', 'items', 'list']);
+                    var normalized = PlatformUtil.normalizeScopeList(list);
+                    if (normalized.length) scopes = normalized;
+                } catch (e) { /* 使用内置回退表 */ }
+            }
+            if (!scopes) {
+                scopes = FALLBACK_ROWS.map(function (r) { return { key: r.key, name: r.name, desc: r.fields, sensitive: r.sensitive }; });
+            }
+            renderScopeRows(scopes);
+        }
+
+        /* ---------- 复制按钮 ---------- */
+        function initCopyButtons() {
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('.copy-code') : null;
+                if (!btn) return;
+                var target = document.getElementById(btn.getAttribute('data-target') || '');
+                if (!target) return;
+                PlatformUI.copy(target.textContent).then(function () {
+                    var old = btn.textContent;
+                    btn.textContent = '✓ 已复制';
+                    btn.classList.add('done');
+                    setTimeout(function () {
+                        btn.textContent = old;
+                        btn.classList.remove('done');
+                    }, 1600);
+                }).catch(function () {
+                    PlatformUI.toast('复制失败，请手动选中代码复制', 'error');
+                });
+            });
+        }
+
+        /* ---------- 初始化 ---------- */
+        function init() {
+            PlatformUI.renderNav('guide');
+            initCopyButtons();
+            loadScopeTable();
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    })();
+    </script>
+</body>
+</html>
