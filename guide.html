@@ -575,14 +575,13 @@ Content-Type: application/json
 
         async function loadScopeTable() {
             var scopes = null;
-            if (window.AuthToken && window.AuthToken.get()) {
-                try {
-                    var data = await apiGet('/api/oauth/scopes', { skipAuthRedirect: true });
-                    var list = PlatformUtil.pickArray(data, ['scopes', 'items', 'list']);
-                    var normalized = PlatformUtil.normalizeScopeList(list);
-                    if (normalized.length) scopes = normalized;
-                } catch (e) { /* 使用内置回退表 */ }
-            }
+            // /api/oauth/scopes 是公开端点，未登录也能读取真实权限表；失败时回退内置表
+            try {
+                var data = await apiGet('/api/oauth/scopes', { skipAuthRedirect: true });
+                var list = PlatformUtil.pickArray(data, ['scopes', 'items', 'list']);
+                var normalized = PlatformUtil.normalizeScopeList(list);
+                if (normalized.length) scopes = normalized;
+            } catch (e) { /* 使用内置回退表 */ }
             if (!scopes) {
                 scopes = FALLBACK_ROWS.map(function (r) { return { key: r.key, name: r.name, desc: r.fields, sensitive: r.sensitive }; });
             }
