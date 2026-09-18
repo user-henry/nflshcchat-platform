@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffd700">
+    <title>开发者登录 · NFLSHC 开放平台</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/themes.css">
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 55%, var(--bg-tertiary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            transition: background .4s, color .3s;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 22px;
+            flex-wrap: wrap;
+        }
+        .topbar-brand {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: .02em;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .theme-select {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color .22s ease, box-shadow .22s ease;
+        }
+        .theme-select:hover { border-color: var(--accent-color); }
+        .theme-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-alpha); }
+
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 18px 60px; }
+        .login-shell { width: 100%; max-width: 440px; animation: riseIn .5s cubic-bezier(.22,1,.36,1); }
+        @keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+        .login-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            padding: 34px 30px 28px;
+            box-shadow: 0 22px 60px rgba(0,0,0,.42);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -120px; right: -80px;
+            width: 240px; height: 240px;
+            background: radial-gradient(circle, var(--accent-color-alpha), transparent 70%);
+            pointer-events: none;
+        }
+        .logo {
+            width: 60px; height: 60px;
+            margin: 0 auto 16px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            box-shadow: 0 10px 26px var(--accent-color-alpha);
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            font-size: 25px;
+            letter-spacing: .01em;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+        }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 13px; margin: 8px 0 24px; line-height: 1.7; position: relative; }
+        .field { margin-bottom: 16px; position: relative; }
+        .field label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 7px; }
+        .field input {
+            width: 100%;
+            padding: 12px 14px;
+            font: inherit;
+            font-size: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .field input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-alpha); }
+        .field input::placeholder { color: var(--text-muted); }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            margin-top: 6px;
+            border: none;
+            border-radius: 12px;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a2e;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            box-shadow: 0 8px 22px var(--accent-color-alpha);
+            transition: transform .2s ease, box-shadow .24s ease, filter .24s ease;
+        }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 30px var(--accent-color-alpha); filter: brightness(1.04); }
+        .btn-submit:active:not(:disabled) { transform: translateY(0); }
+        .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+        .msg { margin-top: 16px; font-size: 13.5px; line-height: 1.7; border-radius: 12px; padding: 11px 14px; display: none; word-break: break-word; }
+        .msg.show { display: block; animation: fadeIn .24s ease; }
+        .msg.error { color: var(--danger); background: rgba(220,53,69,.12); border: 1px solid var(--danger); }
+        .msg.ok { color: var(--success); background: rgba(40,167,69,.12); border: 1px solid var(--success); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card-foot {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border-color);
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+        .card-foot a { color: var(--accent-color); text-decoration: none; transition: opacity .2s ease; }
+        .card-foot a:hover { opacity: .78; text-decoration: underline; }
+        .hint-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--accent-color-alpha);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 11.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a class="topbar-brand" href="https://nflshcchat.cc.cd">NFLSHC · OAuth 开放平台</a>
+        <div class="topbar-right">
+            <select class="theme-select" id="themeSelect" aria-label="切换主题"></select>
+        </div>
+    </div>
+
+    <main class="stage">
+        <div class="login-shell">
+            <div class="login-card">
+                <div class="logo">🔐</div>
+                <h1>开发者登录</h1>
+                <p class="subtitle">使用你的 nflshcchat 账号登录开发者平台<br>管理 OAuth 应用、授权用户与封禁记录</p>
+
+                <form id="loginForm" autocomplete="on" novalidate>
+                    <div class="field">
+                        <label for="username">用户名</label>
+                        <input type="text" id="username" name="username" placeholder="你的 nflshcchat 用户名"
+                               autocomplete="username" autocapitalize="off" spellcheck="false" required>
+                    </div>
+                    <div class="field">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" name="password" placeholder="账号密码"
+                               autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="btn-submit" id="submitBtn">登录</button>
+                </form>
+
+                <div class="msg" id="message" role="alert"></div>
+
+                <div class="card-foot">
+                    <div>密码会在浏览器内先做 SHA-256 哈希，再发送给服务端；平台不会看到明文密码。</div>
+                    <div class="hint-badge" id="secureHint">🔒 传输哈希：SHA-256</div>
+                    <div style="margin-top:10px">
+                        没有账号？<a href="https://nflshcchat.cc.cd" target="_blank" rel="noopener">前往主站注册</a>
+                        &nbsp;·&nbsp;
+                        <a href="guide.html">查看接入指南</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var els = {
+            form: document.getElementById('loginForm'),
+            username: document.getElementById('username'),
+            password: document.getElementById('password'),
+            submit: document.getElementById('submitBtn'),
+            msg: document.getElementById('message'),
+            themeSelect: document.getElementById('themeSelect'),
+            secureHint: document.getElementById('secureHint')
+        };
+
+        /* ---------- 主题切换下拉 ---------- */
+        function initThemeSelect() {
+            var themes = (window.ThemeManager && window.ThemeManager.getThemes()) || {};
+            var current = window.ThemeManager ? window.ThemeManager.getTheme() : 'dark';
+            var html = '';
+            Object.keys(themes).forEach(function (key) {
+                var t = themes[key] || {};
+                html += '<option value="' + escapeHtml(key) + '"' + (key === current ? ' selected' : '') + '>' +
+                    escapeHtml((t.icon || '') + ' ' + (t.name || key)) + '</option>';
+            });
+            els.themeSelect.innerHTML = html;
+            els.themeSelect.addEventListener('change', function () {
+                if (window.ThemeManager) window.ThemeManager.setTheme(els.themeSelect.value);
+            });
+        }
+
+        /* ---------- 提示信息 ---------- */
+        function showMessage(text, type) {
+            els.msg.textContent = text || '';
+            els.msg.className = 'msg' + (text ? ' show ' + (type || 'error') : '');
+        }
+
+        /* ---------- SHA-256（优先 WebCrypto，非安全上下文回退纯 JS） ---------- */
+        function sha256HexFallback(text) {
+            function rotr(n, x) { return (x >>> n) | (x << (32 - n)); }
+            var K = [
+                0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+            ];
+            var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+            var bytes = [];
+            var i, c;
+            for (i = 0; i < text.length; i++) {
+                c = text.charCodeAt(i);
+                if (c < 0x80) {
+                    bytes.push(c);
+                } else if (c < 0x800) {
+                    bytes.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+                } else if (c < 0xd800 || c >= 0xe000) {
+                    bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+                } else {
+                    i++;
+                    var cp = 0x10000 + (((c & 0x3ff) << 10) | (text.charCodeAt(i) & 0x3ff));
+                    bytes.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63));
+                }
+            }
+            var bitLen = bytes.length * 8;
+            bytes.push(0x80);
+            while (bytes.length % 64 !== 56) bytes.push(0);
+            bytes.push(0, 0, 0, 0,
+                (bitLen >>> 24) & 255, (bitLen >>> 16) & 255, (bitLen >>> 8) & 255, bitLen & 255);
+
+            var w = new Array(64);
+            for (var off = 0; off < bytes.length; off += 64) {
+                var t;
+                for (t = 0; t < 16; t++) {
+                    w[t] = (bytes[off + t * 4] << 24) | (bytes[off + t * 4 + 1] << 16) |
+                           (bytes[off + t * 4 + 2] << 8) | bytes[off + t * 4 + 3];
+                }
+                for (t = 16; t < 64; t++) {
+                    var s0 = rotr(7, w[t - 15]) ^ rotr(18, w[t - 15]) ^ (w[t - 15] >>> 3);
+                    var s1 = rotr(17, w[t - 2]) ^ rotr(19, w[t - 2]) ^ (w[t - 2] >>> 10);
+                    w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+                }
+                var a = H[0], b = H[1], cc = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+                for (t = 0; t < 64; t++) {
+                    var S1 = rotr(6, e) ^ rotr(11, e) ^ rotr(25, e);
+                    var ch = (e & f) ^ (~e & g);
+                    var temp1 = (h + S1 + ch + K[t] + w[t]) | 0;
+                    var S0 = rotr(2, a) ^ rotr(13, a) ^ rotr(22, a);
+                    var maj = (a & b) ^ (a & cc) ^ (b & cc);
+                    var temp2 = (S0 + maj) | 0;
+                    h = g; g = f; f = e; e = (d + temp1) | 0;
+                    d = cc; cc = b; b = a; a = (temp1 + temp2) | 0;
+                }
+                H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + cc) | 0; H[3] = (H[3] + d) | 0;
+                H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+            }
+            return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+        }
+
+        function toHex(buffer) {
+            var view = new Uint8Array(buffer);
+            var out = '';
+            for (var i = 0; i < view.length; i++) {
+                out += ('0' + view[i].toString(16)).slice(-2);
+            }
+            return out;
+        }
+
+        async function sha256Hex(text) {
+            var subtle = window.crypto && (window.crypto.subtle || window.crypto.webkitSubtle);
+            if (subtle && typeof TextEncoder === 'function') {
+                try {
+                    return toHex(await subtle.digest('SHA-256', new TextEncoder().encode(text)));
+                } catch (e) { /* 回退 */ }
+            }
+            els.secureHint.textContent = '⚠ 当前非 HTTPS 环境，已使用内置 SHA-256 实现';
+            return sha256HexFallback(text);
+        }
+
+        /* ---------- 跳转目标 ---------- */
+        function nextTarget() {
+            var next = new URLSearchParams(window.location.search).get('next') || '';
+            if (!next || next.indexOf('//') !== -1 || next.charAt(0) === '/') return 'dashboard.html';
+            return next;
+        }
+        function gotoDashboard() { window.location.replace(nextTarget()); }
+
+        /* ---------- 已登录直接进入 ---------- */
+        async function checkAlreadyLoggedIn() {
+            if (!window.AuthToken || !window.AuthToken.get()) return false;
+            try {
+                var me = await apiGet('/api/auth/me', { skipAuthRedirect: true });
+                var user = (me && (me.user || me.data)) || me;
+                if (user && user.username) {
+                    try { localStorage.setItem('nflshc_currentUser', JSON.stringify(user)); } catch (e) { /* 忽略 */ }
+                    gotoDashboard();
+                    return true;
+                }
+            } catch (e) { /* token 失效则留在登录页 */ }
+            return false;
+        }
+
+        /* ---------- 提交登录 ---------- */
+        async function onSubmit(event) {
+            event.preventDefault();
+            var username = els.username.value.trim();
+            var password = els.password.value;
+
+            if (!username) { showMessage('请输入用户名', 'error'); els.username.focus(); return; }
+            if (!password) { showMessage('请输入密码', 'error'); els.password.focus(); return; }
+
+            els.submit.disabled = true;
+            els.submit.textContent = '登录中…';
+            showMessage('');
+
+            try {
+                var hash = await sha256Hex(password);
+                var data = await apiPost('/api/auth/login', { username: username, password: hash }, { skipAuthRedirect: true });
+
+                var token = (data && (data.token || data.accessToken || data.access_token)) || '';
+                if (!token) throw new Error('服务端未返回登录令牌，请联系管理员');
+
+                if (window.AuthToken) window.AuthToken.set(token);
+                var user = (data && (data.user || data.data)) || { username: username, isAdmin: false };
+                if (!user.username) user.username = username;
+                try { localStorage.setItem('nflshc_currentUser', JSON.stringify(user)); } catch (e) { /* 忽略 */ }
+
+                showMessage('登录成功，正在进入开发者平台…', 'ok');
+                els.submit.textContent = '登录成功';
+                setTimeout(gotoDashboard, 400);
+            } catch (err) {
+                var text = (err && err.message) ? err.message : '登录失败，请稍后重试';
+                showMessage(text, 'error');
+                els.submit.disabled = false;
+                els.submit.textContent = '登录';
+                els.password.select();
+            }
+        }
+
+        /* ---------- 初始化 ---------- */
+        initThemeSelect();
+        els.form.addEventListener('submit', onSubmit);
+        checkAlreadyLoggedIn();
+    })();
+    </script>
+</body>
+</html>
