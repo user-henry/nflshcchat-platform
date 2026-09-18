@@ -304,12 +304,13 @@ const CLIENT_ID = 'nac_你的应用ID';
 const CLIENT_SECRET = 'nacs_你的密钥';
 const REDIRECT_URI = 'https://你的站点/callback';
 const API = 'https://worker.nflshcchat.cc.cd';
+const ACCOUNTS = 'https://accounts.nflshcchat.cc.cd';
 
 // ① 跳转授权中心
 app.get('/login', (req, res) => {
   const state = Math.random().toString(36).slice(2);
   req.session = req.session || {};
-  res.redirect(`${API.replace('worker', 'accounts')}/authorize.html` +
+  res.redirect(`${ACCOUNTS}/authorize.html` +
     `?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&scope=${encodeURIComponent('profile email')}&state=${state}`);
 });
