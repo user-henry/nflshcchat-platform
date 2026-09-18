@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffd700">
+    <title>封禁管理 · NFLSHC 开放平台</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/themes.css">
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Verdana, sans-serif;
+            background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background .4s, color .3s;
+        }
+        .container { max-width: 1180px; margin: 0 auto; padding: 26px 20px 70px; }
+
+        .page-head { margin-bottom: 20px; }
+        .page-title {
+            font-size: 26px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-sub { color: var(--text-muted); font-size: 13.5px; margin-top: 7px; line-height: 1.75; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px;
+            padding: 16px 18px; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease;
+        }
+        .stat:hover { transform: translateY(-3px); border-color: var(--accent-color); box-shadow: 0 12px 30px rgba(0,0,0,.26); }
+        .stat-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+        .stat-value { font-size: 26px; font-weight: 700; color: var(--accent-color); margin-top: 6px; }
+        .stat-value.danger { color: var(--danger); }
+        .stat-value.warn { color: var(--warning); }
+        .stat-value.ok { color: var(--success); }
+
+        .card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 18px;
+            padding: 22px; box-shadow: 0 14px 40px rgba(0,0,0,.2); margin-bottom: 20px;
+        }
+        .card-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+        .card-title { font-size: 17px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.75; margin-bottom: 18px; }
+
+        .btn {
+            appearance: none; border: 1px solid transparent; border-radius: 11px;
+            padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            transition: transform .18s ease, background .22s ease, color .22s ease, border-color .22s ease, opacity .22s ease;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+        .btn-ghost:hover:not(:disabled) { color: var(--text-primary); border-color: var(--accent-color); }
+        .btn-ok { background: transparent; color: var(--success); border-color: var(--success); }
+        .btn-ok:hover:not(:disabled) { background: var(--success); color: #fff; }
+        .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 9px; }
+
+        .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .toolbar label { font-size: 13px; color: var(--text-secondary); }
+        .select, .input {
+            background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 13.5px;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .select:focus, .input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-alpha); }
+        .input { min-width: 200px; }
+
+        .table-wrap { overflow-x: auto; border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th {
+            text-align: left; padding: 12px 14px; font-size: 11.5px; letter-spacing: .07em;
+            text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color); white-space: nowrap;
+        }
+        td { padding: 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tbody tr { transition: background .2s ease; }
+        tbody tr:hover { background: var(--hover-bg); }
+        tbody tr:last-child td { border-bottom: none; }
+        .mono { font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; }
+        .u-name { font-weight: 700; }
+        .reason-cell { max-width: 460px; white-space: pre-wrap; word-break: break-word; line-height: 1.7; color: var(--text-secondary); font-size: 13.5px; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border-color); color: var(--text-secondary); white-space: nowrap; }
+        .badge-ok { color: var(--success); border-color: var(--success); background: rgba(40,167,69,.1); }
+        .badge-danger { color: var(--danger); border-color: var(--danger); background: rgba(220,53,69,.1); }
+        .badge-warn { color: var(--warning); border-color: var(--warning); background: rgba(243,156,18,.1); }
+        .badge-muted { color: var(--text-muted); }
+
+        .empty { text-align: center; padding: 42px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; opacity: .8; }
+        .empty h3 { color: var(--text-primary); font-size: 16px; margin-bottom: 8px; }
+        .empty p { font-size: 13px; line-height: 1.8; }
+        .skeleton { height: 52px; border-radius: 12px; background: linear-gradient(90deg, var(--bg-tertiary), var(--hover-bg), var(--bg-tertiary)); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; margin-bottom: 10px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .hidden { display: none !important; }
+
+        .notice { display: flex; gap: 10px; padding: 14px 16px; border-radius: 13px; background: var(--accent-color-alpha); border: 1px solid var(--border-color); font-size: 13px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 20px; }
+        .notice b { color: var(--accent-color); }
+
+        .req-list { display: flex; flex-direction: column; gap: 12px; }
+        .req-item { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px 18px; transition: border-color .22s ease, transform .22s ease; }
+        .req-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .req-item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+        .req-user { font-weight: 700; font-size: 15px; }
+        .req-reason { font-size: 13.5px; line-height: 1.85; color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; margin-top: 8px; }
+        .req-note { margin-top: 10px; padding: 11px 13px; border-radius: 10px; background: var(--hover-bg); font-size: 13px; line-height: 1.75; }
+        .req-note-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 4px; }
+        .req-time { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+        .chip-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip-btn {
+            appearance: none; cursor: pointer; font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 999px;
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary);
+            transition: all .2s ease;
+        }
+        .chip-btn:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-1px); }
+        .chip-btn.active { background: var(--accent-color-alpha); border-color: var(--accent-color); color: var(--accent-color); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-head">
+            <h1 class="page-title">封禁管理</h1>
+            <p class="page-sub">
+                汇总你名下所有应用的「项目内封禁名单」与「全站封禁申请记录」。
+                项目内封禁仅在你自己的项目内生效；全站封禁需由主站管理员 huangzhiyuan 审核批准。
+            </p>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><div class="stat-label">我的应用</div><div class="stat-value" id="statApps">—</div></div>
+            <div class="stat"><div class="stat-label">项目内封禁</div><div class="stat-value danger" id="statBans">—</div></div>
+            <div class="stat"><div class="stat-label">待审申请</div><div class="stat-value warn" id="statPending">—</div></div>
+            <div class="stat"><div class="stat-label">已批准</div><div class="stat-value ok" id="statApproved">—</div></div>
+            <div class="stat"><div class="stat-label">已驳回</div><div class="stat-value" id="statRejected">—</div></div>
+        </div>
+
+        <div class="notice">
+            <span>ℹ️</span>
+            <div>
+                开发者<b>无法修改用户在主站的状态</b>。项目内封禁只写入你的应用管辖范围，用户在主站仍可正常使用；
+                如需全站封禁，请提交申请并等待管理员审核。
+            </div>
+        </div>
+
+        <!-- 项目内封禁 -->
+        <div class="card">
+            <div class="card-head-row">
+                <div>
+                    <h2 class="card-title">🚫 项目内封禁名单</h2>
+                    <p class="card-desc">按应用逐个查询（GET /api/oauth/clients/:id/bans）。这些用户在对应应用内会被拒绝放行。</p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" id="reloadBansBtn">刷新</button>
+            </div>
+
+            <div class="toolbar">
+                <label for="banAppFilter">按应用筛选</label>
+                <select class="select" id="banAppFilter"><option value="">全部应用</option></select>
+                <label for="banSearch">搜索用户</label>
+                <input class="input" type="text" id="banSearch" placeholder="用户名关键词" spellcheck="false">
+            </div>
+
+            <div id="bansLoading"><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="empty hidden" id="bansEmpty">
+                <div class="empty-icon">✅</div>
+                <h3>没有项目内封禁记录</h3>
+                <p>你还没有在任何应用内封禁用户。</p>
+            </div>
+            <div class="empty hidden" id="bansError">
+                <div class="empty-icon">⚠️</div>
+                <h3>封禁名单加载失败</h3>
+                <p id="bansErrorText"></p>
+                <div style="margin-top:16px"><button type="button" class="btn btn-ghost" id="bansRetryBtn">重新加载</button></div>
+            </div>
+            <div class="table-wrap hidden" id="bansTableBox">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户</th>
+                            <th>所属应用</th>
+                            <th>封禁原因</th>
+                            <th>封禁时间</th>
+                            <th>操作人</th>
+                            <th style="text-align:right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bansTbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 全站封禁申请 -->
+        <div class="card">
+            <div class="card-head-row">
+                <div>
+                    <h2 class="card-title">🛡️ 全站封禁申请记录</h2>
+                    <p class="card-desc">你提交的全部全站封禁申请（GET /api/oauth/ban-requests），含审核状态、管理员备注与理由全文。</p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" id="reloadReqsBtn">刷新</button>
+            </div>
+
+            <div class="toolbar">
+                <div class="chip-filters" id="statusFilters">
+                    <button type="button" class="chip-btn active" data-status="">全部 <span id="cntAll">0</span></button>
+                    <button type="button" class="chip-btn" data-status="pending">待审核 <span id="cntPending">0</span></button>
+                    <button type="button" class="chip-btn" data-status="approved">已批准 <span id="cntApproved">0</span></button>
+                    <button type="button" class="chip-btn" data-status="rejected">已驳回 <span id="cntRejected">0</span></button>
+                </div>
+                <label for="reqSearch" style="margin-left:auto">搜索</label>
+                <input class="input" type="text" id="reqSearch" placeholder="用户名 / 应用 ID / 理由关键词" spellcheck="false">
+            </div>
+
+            <div id="reqsLoading"><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="empty hidden" id="reqsEmpty">
+                <div class="empty-icon">📭</div>
+                <h3>暂无封禁申请记录</h3>
+                <p>你可以在应用详情页对某个用户提交「申请全站封禁」，并附带详细理由。</p>
+            </div>
+            <div class="empty hidden" id="reqsError">
+                <div class="empty-icon">⚠️</div>
+                <h3>申请记录加载失败</h3>
+                <p id="reqsErrorText"></p>
+                <div style="margin-top:16px"><button type="button" class="btn btn-ghost" id="reqsRetryBtn">重新加载</button></div>
+            </div>
+            <div class="req-list" id="reqsList"></div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var state = {
+            clients: [],
+            bans: [],          // { clientId, clientName, username, reason, bannedAt, bannedBy }
+            requests: [],
+            banAppFilter: '',
+            banSearch: '',
+            reqStatus: '',
+            reqSearch: ''
+        };
+
+        var els = {
+            statApps: document.getElementById('statApps'),
+            statBans: document.getElementById('statBans'),
+            statPending: document.getElementById('statPending'),
+            statApproved: document.getElementById('statApproved'),
+            statRejected: document.getElementById('statRejected'),
+            banAppFilter: document.getElementById('banAppFilter'),
+            banSearch: document.getElementById('banSearch'),
+            bansLoading: document.getElementById('bansLoading'),
+            bansEmpty: document.getElementById('bansEmpty'),
+            bansError: document.getElementById('bansError'),
+            bansErrorText: document.getElementById('bansErrorText'),
+            bansRetryBtn: document.getElementById('bansRetryBtn'),
+            bansTableBox: document.getElementById('bansTableBox'),
+            bansTbody: document.getElementById('bansTbody'),
+            reloadBansBtn: document.getElementById('reloadBansBtn'),
+            statusFilters: document.getElementById('statusFilters'),
+            cntAll: document.getElementById('cntAll'),
+            cntPending: document.getElementById('cntPending'),
+            cntApproved: document.getElementById('cntApproved'),
+            cntRejected: document.getElementById('cntRejected'),
+            reqSearch: document.getElementById('reqSearch'),
+            reqsLoading: document.getElementById('reqsLoading'),
+            reqsEmpty: document.getElementById('reqsEmpty'),
+            reqsError: document.getElementById('reqsError'),
+            reqsErrorText: document.getElementById('reqsErrorText'),
+            reqsRetryBtn: document.getElementById('reqsRetryBtn'),
+            reqsList: document.getElementById('reqsList'),
+            reloadReqsBtn: document.getElementById('reloadReqsBtn')
+        };
+
+        /* ============ 项目内封禁 ============ */
+        async function loadBans() {
+            els.bansLoading.classList.remove('hidden');
+            els.bansTableBox.classList.add('hidden');
+            els.bansEmpty.classList.add('hidden');
+            els.bansError.classList.add('hidden');
+
+            try {
+                var clientsData = await apiGet('/api/oauth/clients');
+                state.clients = PlatformUtil.pickArray(clientsData, ['clients', 'apps', 'items', 'list'])
+                    .map(PlatformUtil.normalizeClient);
+
+                var errors = 0;
+                var results = await Promise.all(state.clients.map(async function (c) {
+                    try {
+                        var data = await apiGet('/api/oauth/clients/' + encodeURIComponent(c.id) + '/bans');
+                        return PlatformUtil.pickArray(data, ['bans', 'users', 'items', 'list']).map(function (b) {
+                            var entry = PlatformUtil.normalizeBanEntry(b);
+                            if (!entry.clientId) entry.clientId = c.id;
+                            entry.clientName = c.name;
+                            return entry;
+                        });
+                    } catch (e) {
+                        errors++;
+                        return [];
+                    }
+                }));
+
+                state.bans = [];
+                results.forEach(function (arr) { state.bans = state.bans.concat(arr); });
+                if (errors) {
+                    PlatformUI.toast(errors + ' / ' + state.clients.length + ' 个应用的封禁名单加载失败，请稍后重试', 'warning');
+                }
+                renderAppFilter();
+                renderBans();
+                renderStats();
+            } catch (err) {
+                els.bansErrorText.textContent = (err && err.message) || '未知错误';
+                els.bansError.classList.remove('hidden');
+            } finally {
+                els.bansLoading.classList.add('hidden');
+            }
+        }
+
+        function renderAppFilter() {
+            var current = els.banAppFilter.value;
+            var options = '<option value="">全部应用</option>' + state.clients.map(function (c) {
+                return '<option value="' + escapeHtml(c.id) + '">' + escapeHtml(c.name) + '（' + escapeHtml(c.id) + '）</option>';
+            }).join('');
+            els.banAppFilter.innerHTML = options;
+            if (current) els.banAppFilter.value = current;
+        }
+
+        function filteredBans() {
+            var q = state.banSearch.toLowerCase();
+            return state.bans.filter(function (b) {
+                if (state.banAppFilter && b.clientId !== state.banAppFilter) return false;
+                if (q && String(b.username || '').toLowerCase().indexOf(q) === -1) return false;
+                return true;
+            });
+        }
+
+        function renderBans() {
+            var list = filteredBans();
+            if (!list.length) {
+                els.bansTableBox.classList.add('hidden');
+                els.bansEmpty.classList.remove('hidden');
+                return;
+            }
+            els.bansEmpty.classList.add('hidden');
+            els.bansTableBox.classList.remove('hidden');
+            els.bansTbody.innerHTML = list.map(function (b) {
+                return '<tr>' +
+                    '<td><span class="u-name">' + escapeHtml(b.username || '—') + '</span>' +
+                        (b.nickname ? '<div class="mono" style="color:var(--text-muted)">' + escapeHtml(b.nickname) + '</div>' : '') + '</td>' +
+                    '<td>' + escapeHtml(b.clientName || '—') + '<div class="mono" style="color:var(--text-muted)">' +
+                        escapeHtml(b.clientId || '') + '</div></td>' +
+                    '<td class="reason-cell">' + (b.reason ? escapeHtml(b.reason) : '<span class="badge badge-muted">未提供</span>') + '</td>' +
+                    '<td class="mono">' + escapeHtml(PlatformUI.formatDate(b.bannedAt)) + '</td>' +
+                    '<td class="mono">' + escapeHtml(b.bannedBy || '—') + '</td>' +
+                    '<td style="text-align:right"><button type="button" class="btn btn-ok btn-sm" data-unban-app="' +
+                        escapeHtml(b.clientId) + '" data-unban-user="' + escapeHtml(b.username) + '">解除封禁</button></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        async function unban(clientId, username) {
+            var ok = await PlatformUI.confirm({
+                title: '解除项目内封禁',
+                message: '确定要在应用 ' + clientId + ' 内解除对 ' + username + ' 的封禁吗？',
+                confirmText: '解除封禁'
+            });
+            if (!ok) return;
+            try {
+                await apiPost('/api/oauth/clients/' + encodeURIComponent(clientId) +
+                    '/users/' + encodeURIComponent(username) + '/unban', {});
+                PlatformUI.toast('已解除对 ' + username + ' 的封禁', 'success');
+                await loadBans();
+            } catch (err) {
+                PlatformUI.toast((err && err.message) || '解除失败', 'error');
+            }
+        }
+
+        /* ============ 全站封禁申请 ============ */
+        function reqStatusBadge(status) {
+            if (status === 'approved') return '<span class="badge badge-ok">已批准</span>';
+            if (status === 'rejected') return '<span class="badge badge-danger">已驳回</span>';
+            if (status === 'pending') return '<span class="badge badge-warn">待审核</span>';
+            return '<span class="badge badge-muted">' + escapeHtml(status || '未知') + '</span>';
+        }
+
+        async function loadRequests() {
+            els.reqsLoading.classList.remove('hidden');
+            els.reqsEmpty.classList.add('hidden');
+            els.reqsError.classList.add('hidden');
+            try {
+                var data = await apiGet('/api/oauth/ban-requests');
+                state.requests = PlatformUtil.pickArray(data, ['requests', 'banRequests', 'items', 'list'])
+                    .map(PlatformUtil.normalizeBanRequest);
+                renderRequestCounts();
+                renderRequests();
+                renderStats();
+            } catch (err) {
+                els.reqsErrorText.textContent = (err && err.message) || '未知错误';
+                els.reqsError.classList.remove('hidden');
+            } finally {
+                els.reqsLoading.classList.add('hidden');
+            }
+        }
+
+        function countByStatus(status) {
+            return state.requests.filter(function (r) { return r.status === status; }).length;
+        }
+
+        function renderRequestCounts() {
+            els.cntAll.textContent = state.requests.length;
+            els.cntPending.textContent = countByStatus('pending');
+            els.cntApproved.textContent = countByStatus('approved');
+            els.cntRejected.textContent = countByStatus('rejected');
+        }
+
+        function filteredRequests() {
+            var q = state.reqSearch.toLowerCase();
+            return state.requests.filter(function (r) {
+                if (state.reqStatus && r.status !== state.reqStatus) return false;
+                if (!q) return true;
+                var hay = [r.username, r.clientId, r.reason, r.note].join(' ').toLowerCase();
+                return hay.indexOf(q) !== -1;
+            });
+        }
+
+        function renderRequests() {
+            var list = filteredRequests();
+            if (!list.length) {
+                els.reqsList.innerHTML = '';
+                els.reqsEmpty.classList.remove('hidden');
+                return;
+            }
+            els.reqsEmpty.classList.add('hidden');
+            els.reqsList.innerHTML = list.map(function (r) {
+                return '<div class="req-item">' +
+                    '<div class="req-item-head">' +
+                        '<span class="req-user">' + escapeHtml(r.username || '(未知用户)') + '</span>' +
+                        reqStatusBadge(r.status) +
+                        (r.clientId ? '<span class="badge badge-muted mono">' + escapeHtml(r.clientId) + '</span>' : '') +
+                        (r.id ? '<span class="badge badge-muted mono">' + escapeHtml(r.id) + '</span>' : '') +
+                    '</div>' +
+                    '<div class="req-reason">' + escapeHtml(r.reason || '(未填写理由)') + '</div>' +
+                    (r.note ? '<div class="req-note"><span class="req-note-label">管理员备注</span>' + escapeHtml(r.note) + '</div>' : '') +
+                    '<div class="req-time">提交时间：' + escapeHtml(PlatformUI.formatDate(r.createdAt)) +
+                        (r.reviewedAt ? ' · 审核时间：' + escapeHtml(PlatformUI.formatDate(r.reviewedAt)) : '') + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        /* ============ 统计 ============ */
+        function renderStats() {
+            els.statApps.textContent = state.clients.length;
+            els.statBans.textContent = state.bans.length;
+            els.statPending.textContent = countByStatus('pending');
+            els.statApproved.textContent = countByStatus('approved');
+            els.statRejected.textContent = countByStatus('rejected');
+        }
+
+        /* ============ 事件 ============ */
+        function bindEvents() {
+            els.reloadBansBtn.addEventListener('click', loadBans);
+            els.bansRetryBtn.addEventListener('click', loadBans);
+            els.reloadReqsBtn.addEventListener('click', loadRequests);
+            els.reqsRetryBtn.addEventListener('click', loadRequests);
+
+            els.banAppFilter.addEventListener('change', function () {
+                state.banAppFilter = els.banAppFilter.value;
+                renderBans();
+            });
+            els.banSearch.addEventListener('input', function () {
+                state.banSearch = els.banSearch.value.trim();
+                renderBans();
+            });
+            els.reqSearch.addEventListener('input', function () {
+                state.reqSearch = els.reqSearch.value.trim();
+                renderRequests();
+            });
+
+            els.statusFilters.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('.chip-btn') : null;
+                if (!btn) return;
+                state.reqStatus = btn.getAttribute('data-status') || '';
+                Array.prototype.slice.call(els.statusFilters.querySelectorAll('.chip-btn')).forEach(function (b) {
+                    b.classList.toggle('active', b === btn);
+                });
+                renderRequests();
+            });
+
+            els.bansTbody.addEventListener('click', function (e) {
+                var t = e.target;
+                var app = t.getAttribute && t.getAttribute('data-unban-app');
+                var user = t.getAttribute && t.getAttribute('data-unban-user');
+                if (app && user) unban(app, user);
+            });
+        }
+
+        /* ============ 初始化 ============ */
+        async function init() {
+            var user = await PlatformUI.requireLogin('bans');
+            if (!user) return;
+            bindEvents();
+            await loadBans();
+            await loadRequests();
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    })();
+    </script>
+</body>
+</html>
