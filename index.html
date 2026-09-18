@@ -191,7 +191,9 @@
                     <div>密码会在浏览器内先做 SHA-256 哈希，再发送给服务端；平台不会看到明文密码。</div>
                     <div class="hint-badge" id="secureHint">🔒 传输哈希：SHA-256</div>
                     <div style="margin-top:10px">
-                        没有账号？<a href="https://nflshcchat.cc.cd" target="_blank" rel="noopener">前往主站注册</a>
+                        没有账号？<a id="registerLink" href="https://accounts.nflshcchat.cc.cd/register.html">前往账号中心注册</a>
+                        &nbsp;·&nbsp;
+                        <a href="https://accounts.nflshcchat.cc.cd/index.html">忘记密码</a>
                         &nbsp;·&nbsp;
                         <a href="guide.html">查看接入指南</a>
                     </div>
@@ -328,6 +330,12 @@
             return next;
         }
         function gotoDashboard() { window.location.replace(nextTarget()); }
+
+        /* ---------- 注册链接（统一走账号中心） ---------- */
+        (function wireAccountCenterLinks() {
+            var reg = document.getElementById('registerLink');
+            if (reg) reg.href = 'https://accounts.nflshcchat.cc.cd/register.html';
+        })();
 
         /* ---------- 已登录直接进入 ---------- */
         async function checkAlreadyLoggedIn() {
