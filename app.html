@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffd700">
+    <title>应用详情 · NFLSHC 开放平台</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/themes.css">
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Verdana, sans-serif;
+            background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background .4s, color .3s;
+        }
+        .container { max-width: 1180px; margin: 0 auto; padding: 26px 20px 70px; }
+
+        .crumb { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+        .crumb a { color: var(--accent-color); text-decoration: none; }
+        .crumb a:hover { text-decoration: underline; }
+
+        .app-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 22px; }
+        .app-logo {
+            width: 64px; height: 64px; border-radius: 18px; flex: none;
+            display: flex; align-items: center; justify-content: center; font-size: 30px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            box-shadow: 0 10px 26px var(--accent-color-alpha); overflow: hidden;
+        }
+        .app-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .app-head-text { flex: 1; min-width: 220px; }
+        .page-title {
+            font-size: 25px; letter-spacing: .01em;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-sub { color: var(--text-muted); font-size: 13px; margin-top: 6px; line-height: 1.7; }
+        .head-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+
+        .card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            border-radius: 18px; padding: 22px; box-shadow: 0 14px 40px rgba(0,0,0,.2);
+            margin-bottom: 20px; transition: border-color .25s ease, box-shadow .25s ease;
+        }
+        .card-title { font-size: 17px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.75; margin-bottom: 18px; }
+        .card-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+        .btn {
+            appearance: none; border: 1px solid transparent; border-radius: 11px;
+            padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            transition: transform .18s ease, box-shadow .22s ease, background .22s ease, color .22s ease, border-color .22s ease, opacity .22s ease;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)); color: #1a1a2e; box-shadow: 0 8px 20px var(--accent-color-alpha); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 12px 28px var(--accent-color-alpha); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+        .btn-ghost:hover:not(:disabled) { color: var(--text-primary); border-color: var(--accent-color); }
+        .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
+        .btn-warn { background: transparent; color: var(--warning); border-color: var(--warning); }
+        .btn-warn:hover:not(:disabled) { background: var(--warning); color: #1a1a2e; }
+        .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 9px; }
+
+        .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+        .kv { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 13px; padding: 13px 15px; transition: border-color .2s ease; }
+        .kv:hover { border-color: var(--accent-color); }
+        .kv-label { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+        .kv-value { font-size: 14px; word-break: break-word; line-height: 1.65; }
+        .mono { font-family: "Consolas", "Courier New", monospace; font-size: 13px; }
+        .cid { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .copy-mini {
+            appearance: none; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted);
+            border-radius: 7px; padding: 2px 8px; font-size: 11.5px; cursor: pointer; transition: all .2s ease;
+        }
+        .copy-mini:hover { color: var(--accent-color); border-color: var(--accent-color); }
+
+        .chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            font-size: 12px; padding: 4px 11px; border-radius: 999px;
+            background: var(--accent-color-alpha); border: 1px solid var(--border-color); color: var(--text-secondary);
+            transition: all .2s ease;
+        }
+        .chip:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-1px); }
+        .chip-uri { font-family: "Consolas", "Courier New", monospace; font-size: 12px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+        .field { display: flex; flex-direction: column; }
+        .field.full { grid-column: 1 / -1; }
+        .field label { font-size: 13px; color: var(--text-secondary); margin-bottom: 7px; }
+        .req { color: var(--danger); }
+        .input, .textarea {
+            background: var(--input-bg); color: var(--text-primary);
+            border: 1px solid var(--border-color); border-radius: 11px;
+            padding: 11px 13px; font: inherit; font-size: 14px; width: 100%;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .textarea { resize: vertical; min-height: 90px; line-height: 1.7; }
+        .textarea.mono-area { font-family: "Consolas", "Courier New", monospace; font-size: 13px; }
+        .input:focus, .textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-alpha); }
+        .field-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.65; }
+        .scope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+        .scope-item {
+            display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px;
+            border: 1px solid var(--border-color); border-radius: 13px; cursor: pointer; background: var(--bg-tertiary);
+            transition: border-color .2s ease, transform .2s ease;
+        }
+        .scope-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .scope-item input { margin-top: 3px; accent-color: var(--accent-color); width: 16px; height: 16px; cursor: pointer; }
+        .scope-name { display: block; font-size: 13.5px; font-weight: 600; }
+        .scope-desc { display: block; font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.6; }
+        .sens { font-style: normal; font-size: 11px; color: var(--warning); border: 1px solid var(--warning); border-radius: 999px; padding: 1px 7px; margin-left: 6px; }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+        .form-msg { font-size: 13px; color: var(--danger); margin-top: 12px; display: none; line-height: 1.7; }
+        .form-msg.show { display: block; }
+
+        .table-wrap { overflow-x: auto; border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th {
+            text-align: left; padding: 12px 14px; font-size: 11.5px; letter-spacing: .07em;
+            text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color); white-space: nowrap;
+        }
+        td { padding: 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tbody tr { transition: background .2s ease; }
+        tbody tr:hover { background: var(--hover-bg); }
+        tbody tr:last-child td { border-bottom: none; }
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .avatar {
+            width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover;
+            background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;
+            font-size: 15px; border: 1px solid var(--border-color); overflow: hidden;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .u-name { font-weight: 600; font-size: 14px; }
+        .u-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; word-break: break-all; }
+        .actions-cell { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border-color); color: var(--text-secondary); white-space: nowrap; }
+        .badge-ok { color: var(--success); border-color: var(--success); background: rgba(40,167,69,.1); }
+        .badge-danger { color: var(--danger); border-color: var(--danger); background: rgba(220,53,69,.1); }
+        .badge-warn { color: var(--warning); border-color: var(--warning); background: rgba(243,156,18,.1); }
+        .badge-muted { color: var(--text-muted); }
+        .reason-line { font-size: 12px; color: var(--danger); margin-top: 5px; line-height: 1.6; max-width: 260px; word-break: break-word; }
+
+        .notice { display: flex; gap: 10px; padding: 14px 16px; border-radius: 13px; background: var(--accent-color-alpha); border: 1px solid var(--border-color); font-size: 13px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 20px; }
+        .notice.warn { background: rgba(243,156,18,.1); border-color: var(--warning); color: var(--text-secondary); }
+        .notice b { color: var(--accent-color); }
+        .notice.warn b { color: var(--warning); }
+
+        .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 38px; margin-bottom: 10px; opacity: .8; }
+        .empty h3 { color: var(--text-primary); font-size: 16px; margin-bottom: 8px; }
+        .empty p { font-size: 13px; line-height: 1.8; }
+        .skeleton { height: 54px; border-radius: 12px; background: linear-gradient(90deg, var(--bg-tertiary), var(--hover-bg), var(--bg-tertiary)); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; margin-bottom: 10px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .hidden { display: none !important; }
+
+        .req-list { display: flex; flex-direction: column; gap: 12px; }
+        .req-item { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 14px; padding: 15px 17px; transition: border-color .22s ease, transform .22s ease; }
+        .req-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .req-item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+        .req-user { font-weight: 700; }
+        .req-reason { font-size: 13.5px; line-height: 1.85; color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; margin-top: 8px; }
+        .req-note { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--hover-bg); font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+        .req-note-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 4px; }
+        .req-time { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+        .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; color: var(--text-secondary); }
+        .filter-row input[type="checkbox"] { accent-color: var(--accent-color); width: 15px; height: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="crumb"><a href="dashboard.html">← 返回应用管理</a></div>
+
+        <div class="app-head">
+            <div class="app-logo" id="appLogo">🚀</div>
+            <div class="app-head-text">
+                <h1 class="page-title" id="appName">加载中…</h1>
+                <p class="page-sub" id="appSub">正在读取应用信息</p>
+            </div>
+            <div class="head-actions">
+                <button type="button" class="btn btn-ghost" id="editToggleBtn">✏️ 编辑信息</button>
+                <button type="button" class="btn btn-ghost" id="resetSecretBtn">🔑 重置密钥</button>
+                <a class="btn btn-ghost" href="bans.html">🚫 封禁管理</a>
+            </div>
+        </div>
+
+        <div class="notice warn">
+            <span>⚠️</span>
+            <div>
+                <b>项目内封禁仅在你自己的项目内生效</b>（只影响你的应用对用户的放行判断，不改动主站账号状态）；
+                <b>全站封禁需由主站管理员 huangzhiyuan 审核批准</b>。开发者无法通过任何接口修改用户在主站的状态。
+            </div>
+        </div>
+
+        <div class="empty hidden" id="fatalBox">
+            <div class="empty-icon">⚠️</div>
+            <h3 id="fatalTitle">应用加载失败</h3>
+            <p id="fatalText"></p>
+            <div style="margin-top:16px"><a class="btn btn-primary" href="dashboard.html">返回应用管理</a></div>
+        </div>
+
+        <div id="mainArea" class="hidden">
+            <!-- 基本信息 -->
+            <div class="card">
+                <div class="card-head-row">
+                    <div>
+                        <h2 class="card-title">📋 基本信息</h2>
+                        <p class="card-desc">应用公开标识与状态。client_id 可以公开，client_secret 必须保密。</p>
+                    </div>
+                    <span id="appStatusBadge"></span>
+                </div>
+                <div class="kv-grid" id="infoGrid"></div>
+            </div>
+
+            <!-- 编辑 -->
+            <div class="card hidden" id="editCard">
+                <h2 class="card-title">✏️ 编辑应用信息</h2>
+                <p class="card-desc">回调地址与权限范围修改后立即生效；若缩减权限，已授权用户再次访问时会重新确认。</p>
+                <form id="editForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="e-name">应用名称 <span class="req">*</span></label>
+                            <input class="input" type="text" id="e-name" maxlength="60" required>
+                        </div>
+                        <div class="field">
+                            <label for="e-homepage">应用主页</label>
+                            <input class="input" type="url" id="e-homepage" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label for="e-logo">应用图标 URL</label>
+                            <input class="input" type="url" id="e-logo" spellcheck="false">
+                        </div>
+                        <div class="field">
+                            <label for="e-redirects">回调地址（每行一个） <span class="req">*</span></label>
+                            <textarea class="textarea mono-area" id="e-redirects" rows="4"></textarea>
+                            <div class="field-hint">必须与授权请求中的 redirect_uri 完全一致，否则返回 invalid_redirect_uri。</div>
+                        </div>
+                        <div class="field full">
+                            <label for="e-description">应用简介</label>
+                            <textarea class="textarea" id="e-description" rows="3"></textarea>
+                        </div>
+                        <div class="field full">
+                            <label>申请权限（scope） <span class="req">*</span></label>
+                            <div class="scope-grid" id="editScopeGrid"></div>
+                        </div>
+                    </div>
+                    <div class="form-msg" id="editMsg"></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" id="cancelEditBtn">取消</button>
+                        <button type="submit" class="btn btn-primary" id="saveEditBtn">保存修改</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 接入信息（兜底展示） -->
+            <div class="card">
+                <h2 class="card-title">🔗 接入信息</h2>
+                <p class="card-desc">以下为你登记的回调地址与已申请权限，可直接用于接入代码。</p>
+                <div class="kv-grid">
+                    <div class="kv">
+                        <div class="kv-label">client_id</div>
+                        <div class="kv-value cid">
+                            <span class="mono" id="infoClientId">—</span>
+                            <button type="button" class="copy-mini" id="copyClientIdBtn">复制</button>
+                        </div>
+                    </div>
+                    <div class="kv">
+                        <div class="kv-label">client_secret</div>
+                        <div class="kv-value">
+                            <span class="mono">••••••••••••••••</span>
+                            <button type="button" class="copy-mini" id="resetSecretBtn2" style="margin-left:6px">重置密钥</button>
+                        </div>
+                    </div>
+                    <div class="kv">
+                        <div class="kv-label">授权中心入口</div>
+                        <div class="kv-value mono" style="font-size:12px">
+                            https://accounts.nflshcchat.cc.cd/authorize.html?client_id=<span id="infoClientId2">—</span>&amp;redirect_uri=…&amp;scope=…&amp;state=…
+                        </div>
+                    </div>
+                    <div class="kv">
+                        <div class="kv-label">API 基址</div>
+                        <div class="kv-value mono" style="font-size:12px">https://worker.nflshcchat.cc.cd</div>
+                    </div>
+                </div>
+                <div style="margin-top:16px">
+                    <div class="kv-label" style="margin-bottom:8px">回调地址（redirect_uri 白名单）</div>
+                    <div class="chip-list" id="infoRedirects"></div>
+                </div>
+                <div style="margin-top:16px">
+                    <div class="kv-label" style="margin-bottom:8px">已申请权限（scope）</div>
+                    <div class="chip-list" id="infoScopes"></div>
+                </div>
+            </div>
+
+            <!-- 授权用户 -->
+            <div class="card">
+                <div class="card-head-row">
+                    <div>
+                        <h2 class="card-title">👥 授权用户</h2>
+                        <p class="card-desc">已授权你应用的用户（你的管辖范围）。字段受用户授权的 scope 限制，未授权邮箱时不会返回。</p>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="reloadUsersBtn">刷新</button>
+                </div>
+                <div id="usersLoading"><div class="skeleton"></div><div class="skeleton"></div></div>
+                <div class="empty hidden" id="usersEmpty">
+                    <div class="empty-icon">👤</div>
+                    <h3>还没有用户授权</h3>
+                    <p>把用户引导到授权中心并同意授权后，用户会出现在这里。</p>
+                </div>
+                <div class="empty hidden" id="usersError">
+                    <div class="empty-icon">⚠️</div>
+                    <h3>授权用户加载失败</h3>
+                    <p id="usersErrorText"></p>
+                </div>
+                <div class="table-wrap hidden" id="usersTableBox">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>用户</th>
+                                <th>授权范围</th>
+                                <th>授权时间</th>
+                                <th>项目内封禁</th>
+                                <th>主站状态</th>
+                                <th style="text-align:right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 申请全站封禁 -->
+            <div class="card">
+                <h2 class="card-title">🛡️ 申请全站封禁</h2>
+                <p class="card-desc">
+                    向主站管理员提交全站封禁申请，理由必填且不限字数，请提供时间、行为、证据等细节。
+                    同一应用对同一用户只保留一条待审申请（重复提交会返回 409）。审批结果会以站内通知发送给你。
+                </p>
+                <form id="banReqForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="br-username">目标用户名 <span class="req">*</span></label>
+                            <input class="input" type="text" id="br-username" list="grantedUsers" placeholder="被申请封禁的用户名" spellcheck="false" required>
+                            <datalist id="grantedUsers"></datalist>
+                            <div class="field-hint">建议只针对已授权用户提交申请。</div>
+                        </div>
+                        <div class="field full">
+                            <label for="br-reason">申请理由（必填，不限字数） <span class="req">*</span></label>
+                            <textarea class="textarea" id="br-reason" rows="10"
+                                placeholder="请详细说明：&#10;1. 违规发生的时间与你的应用/项目&#10;2. 具体行为描述与影响&#10;3. 证据（截图链接、日志、消息 ID 等）&#10;4. 你已做过的处置（例如项目内封禁）"></textarea>
+                            <div class="field-hint">理由越完整，管理员审核越快。可粘贴多行文本，支持任意长度。</div>
+                        </div>
+                    </div>
+                    <div class="form-msg" id="banReqMsg"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-warn" id="banReqSubmit">提交申请</button>
+                    </div>
+                </form>
+
+                <div style="margin-top:26px">
+                    <div class="card-title" style="font-size:15px">📨 本应用的申请记录</div>
+                    <div class="filter-row">
+                        <label><input type="checkbox" id="onlyMine" checked> 只显示本应用（<span class="mono" id="filterClientId">—</span>）的申请</label>
+                        <button type="button" class="btn btn-ghost btn-sm" id="reloadReqsBtn">刷新</button>
+                    </div>
+                    <div id="reqsLoading"><div class="skeleton"></div></div>
+                    <div class="empty hidden" id="reqsEmpty">
+                        <div class="empty-icon">📭</div>
+                        <h3>暂无封禁申请记录</h3>
+                        <p>使用上方表单提交申请后，可在这里跟踪 pending / approved / rejected 状态与管理员备注。</p>
+                    </div>
+                    <div class="empty hidden" id="reqsError">
+                        <div class="empty-icon">⚠️</div>
+                        <h3>申请记录加载失败</h3>
+                        <p id="reqsErrorText"></p>
+                    </div>
+                    <div class="req-list" id="reqsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var state = { clientId: '', client: null, users: [], allRequests: [], scopes: [] };
+
+        var els = {
+            appLogo: document.getElementById('appLogo'),
+            appName: document.getElementById('appName'),
+            appSub: document.getElementById('appSub'),
+            appStatusBadge: document.getElementById('appStatusBadge'),
+            infoGrid: document.getElementById('infoGrid'),
+            infoClientId: document.getElementById('infoClientId'),
+            infoClientId2: document.getElementById('infoClientId2'),
+            infoRedirects: document.getElementById('infoRedirects'),
+            infoScopes: document.getElementById('infoScopes'),
+            copyClientIdBtn: document.getElementById('copyClientIdBtn'),
+            editToggleBtn: document.getElementById('editToggleBtn'),
+            editCard: document.getElementById('editCard'),
+            editForm: document.getElementById('editForm'),
+            editScopeGrid: document.getElementById('editScopeGrid'),
+            editMsg: document.getElementById('editMsg'),
+            cancelEditBtn: document.getElementById('cancelEditBtn'),
+            saveEditBtn: document.getElementById('saveEditBtn'),
+            eName: document.getElementById('e-name'),
+            eDesc: document.getElementById('e-description'),
+            eHome: document.getElementById('e-homepage'),
+            eLogo: document.getElementById('e-logo'),
+            eRedirects: document.getElementById('e-redirects'),
+            resetSecretBtn: document.getElementById('resetSecretBtn'),
+            resetSecretBtn2: document.getElementById('resetSecretBtn2'),
+            usersLoading: document.getElementById('usersLoading'),
+            usersEmpty: document.getElementById('usersEmpty'),
+            usersError: document.getElementById('usersError'),
+            usersErrorText: document.getElementById('usersErrorText'),
+            usersTableBox: document.getElementById('usersTableBox'),
+            usersTbody: document.getElementById('usersTbody'),
+            reloadUsersBtn: document.getElementById('reloadUsersBtn'),
+            grantedUsers: document.getElementById('grantedUsers'),
+            brUsername: document.getElementById('br-username'),
+            brReason: document.getElementById('br-reason'),
+            banReqForm: document.getElementById('banReqForm'),
+            banReqMsg: document.getElementById('banReqMsg'),
+            banReqSubmit: document.getElementById('banReqSubmit'),
+            onlyMine: document.getElementById('onlyMine'),
+            filterClientId: document.getElementById('filterClientId'),
+            reqsLoading: document.getElementById('reqsLoading'),
+            reqsEmpty: document.getElementById('reqsEmpty'),
+            reqsError: document.getElementById('reqsError'),
+            reqsErrorText: document.getElementById('reqsErrorText'),
+            reqsList: document.getElementById('reqsList'),
+            reloadReqsBtn: document.getElementById('reloadReqsBtn'),
+            fatalBox: document.getElementById('fatalBox'),
+            fatalTitle: document.getElementById('fatalTitle'),
+            fatalText: document.getElementById('fatalText'),
+            mainArea: document.getElementById('mainArea')
+        };
+
+        function setFormMsg(el, text) {
+            el.textContent = text || '';
+            el.className = 'form-msg' + (text ? ' show' : '');
+        }
+
+        function showFatal(title, text) {
+            els.fatalTitle.textContent = title;
+            els.fatalText.textContent = text;
+            els.fatalBox.classList.remove('hidden');
+            els.mainArea.classList.add('hidden');
+        }
+
+        /* =============== 基本信息 =============== */
+        function statusBadge(status) {
+            var s = String(status || '').toLowerCase();
+            if (s === 'active' || s === '') return '<span class="badge badge-ok">正常运行</span>';
+            if (s === 'suspended' || s === 'disabled') return '<span class="badge badge-danger">已停用</span>';
+            if (s === 'pending') return '<span class="badge badge-warn">待审核</span>';
+            return '<span class="badge badge-muted">' + escapeHtml(status) + '</span>';
+        }
+
+        function renderInfo(client) {
+            els.appName.textContent = client.name || '(未命名应用)';
+            var bits = [];
+            if (client.owner) bits.push('所有者：' + client.owner);
+            if (client.createdAt) bits.push('创建于 ' + PlatformUI.formatDate(client.createdAt));
+            els.appSub.textContent = bits.join(' · ') || '应用详情';
+            els.appStatusBadge.innerHTML = statusBadge(client.status);
+            document.title = (client.name || '应用详情') + ' · NFLSHC 开放平台';
+
+            if (client.logo) {
+                var img = document.createElement('img');
+                img.alt = 'logo';
+                img.src = client.logo;
+                img.onerror = function () { els.appLogo.textContent = '🚀'; };
+                els.appLogo.textContent = '';
+                els.appLogo.appendChild(img);
+            } else {
+                els.appLogo.textContent = '🚀';
+            }
+
+            var rows = [
+                { k: '应用名称', v: escapeHtml(client.name || '—') },
+                { k: '状态', v: statusBadge(client.status) },
+                { k: '所有者', v: escapeHtml(client.owner || '—') },
+                { k: '创建时间', v: escapeHtml(PlatformUI.formatDate(client.createdAt)) },
+                { k: '授权用户数', v: escapeHtml(client.userCount === null ? '—' : String(client.userCount) + ' 人') },
+                { k: '应用主页', v: client.homepage
+                    ? '<a class="app-link" style="color:var(--accent-color);text-decoration:none" href="' + escapeHtml(client.homepage) +
+                      '" target="_blank" rel="noopener">' + escapeHtml(client.homepage) + '</a>'
+                    : '—' },
+                { k: '应用简介', v: escapeHtml(client.description || '—') }
+            ];
+            els.infoGrid.innerHTML = rows.map(function (r) {
+                return '<div class="kv"><div class="kv-label">' + escapeHtml(r.k) + '</div><div class="kv-value">' + r.v + '</div></div>';
+            }).join('');
+
+            els.infoClientId.textContent = client.id || '—';
+            els.infoClientId2.textContent = client.id || '—';
+            els.filterClientId.textContent = client.id || '—';
+
+            els.infoRedirects.innerHTML = client.redirectUris.length
+                ? client.redirectUris.map(function (u) {
+                    return '<span class="chip chip-uri">' + escapeHtml(u) + '</span>';
+                }).join('')
+                : '<span class="chip badge-muted">未登记回调地址</span>';
+
+            els.infoScopes.innerHTML = client.scopes.length
+                ? client.scopes.map(function (s) {
+                    return '<span class="chip">' + escapeHtml(s.name || s.key) + ' <span class="mono" style="opacity:.7">' +
+                        escapeHtml(s.key) + '</span></span>';
+                }).join('')
+                : '<span class="chip badge-muted">未申请权限</span>';
+        }
+
+        /* =============== 编辑表单 =============== */
+        function renderScopeGrid(scopes, selected) {
+            var set = {};
+            (selected || []).forEach(function (k) { set[k] = true; });
+            els.editScopeGrid.innerHTML = scopes.map(function (s) {
+                var checked = set[s.key] ? ' checked' : '';
+                var sens = s.sensitive ? '<em class="sens">敏感</em>' : '';
+                return '<label class="scope-item">' +
+                    '<input type="checkbox" value="' + escapeHtml(s.key) + '"' + checked + '>' +
+                    '<span><span class="scope-name">' + escapeHtml(s.name || s.key) + sens + '</span>' +
+                    '<span class="scope-desc">' + escapeHtml(s.desc || '') + '</span></span></label>';
+            }).join('');
+        }
+
+        function selectedEditScopes() {
+            return Array.prototype.slice.call(els.editScopeGrid.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(function (i) { return i.value; });
+        }
+
+        function fillEditForm(client) {
+            els.eName.value = client.name || '';
+            els.eDesc.value = client.description || '';
+            els.eHome.value = client.homepage || '';
+            els.eLogo.value = client.logo || '';
+            els.eRedirects.value = client.redirectUris.join('\n');
+            renderScopeGrid(state.scopes, client.scopes.map(function (s) { return s.key; }));
+        }
+
+        function toggleEdit(show) {
+            var willShow = (show === undefined) ? els.editCard.classList.contains('hidden') : !!show;
+            els.editCard.classList.toggle('hidden', !willShow);
+            els.editToggleBtn.textContent = willShow ? '收起编辑' : '✏️ 编辑信息';
+            if (willShow) {
+                setFormMsg(els.editMsg, '');
+                fillEditForm(state.client || {});
+                els.editCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        async function onSaveEdit(event) {
+            event.preventDefault();
+            setFormMsg(els.editMsg, '');
+
+            var name = els.eName.value.trim();
+            var redirects = String(els.eRedirects.value || '').split(/[\s,，;；]+/).map(function (s) { return s.trim(); })
+                .filter(function (s) { return !!s; });
+            var scopes = selectedEditScopes();
+
+            if (!name) { setFormMsg(els.editMsg, '请填写应用名称'); return; }
+            if (!redirects.length) { setFormMsg(els.editMsg, '请至少填写一个回调地址'); return; }
+            var bad = redirects.filter(function (u) { return !/^https?:\/\/.+/i.test(u); });
+            if (bad.length) { setFormMsg(els.editMsg, '回调地址格式不正确：' + bad[0]); return; }
+            if (!scopes.length) { setFormMsg(els.editMsg, '请至少勾选一个权限（scope）'); return; }
+
+            els.saveEditBtn.disabled = true;
+            els.saveEditBtn.textContent = '保存中…';
+            try {
+                await apiPatch('/api/oauth/clients/' + encodeURIComponent(state.clientId), {
+                    name: name,
+                    description: els.eDesc.value.trim(),
+                    homepage: els.eHome.value.trim(),
+                    logo: els.eLogo.value.trim(),
+                    redirectUris: redirects,
+                    scopes: scopes
+                });
+                PlatformUI.toast('应用信息已更新', 'success');
+                toggleEdit(false);
+                await loadClient();
+            } catch (err) {
+                setFormMsg(els.editMsg, (err && err.message) || '保存失败');
+            } finally {
+                els.saveEditBtn.disabled = false;
+                els.saveEditBtn.textContent = '保存修改';
+            }
+        }
+
+        /* =============== 重置密钥 =============== */
+        async function resetSecret() {
+            var ok = await PlatformUI.confirm({
+                title: '重置 client_secret',
+                message: '确定要重置应用密钥吗？\n\n旧密钥会立即失效，使用旧密钥的线上服务将无法换取令牌，需要你尽快替换为新密钥。',
+                confirmText: '确认重置',
+                danger: true
+            });
+            if (!ok) return;
+            try {
+                var data = await apiPost('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/secret', {});
+                var secret = (data && (data.clientSecret || data.client_secret)) || '';
+                if (secret) {
+                    await PlatformUI.secret({
+                        title: '新密钥（client_secret）',
+                        secret: secret,
+                        hint: '应用 ' + (state.client ? state.client.name : '') + '（' + state.clientId + '）的密钥已重置。'
+                    });
+                } else {
+                    PlatformUI.toast('密钥已重置，但服务端未返回新的 clientSecret', 'warning');
+                }
+            } catch (err) {
+                PlatformUI.toast((err && err.message) || '重置失败', 'error');
+            }
+        }
+
+        /* =============== 授权用户 =============== */
+        function scopeChips(scopes) {
+            if (!scopes || !scopes.length) return '<span class="badge badge-muted">无</span>';
+            return scopes.map(function (s) {
+                return '<span class="chip">' + escapeHtml(s.name || s.key) + '</span>';
+            }).join('');
+        }
+
+        function renderUsers(users) {
+            els.grantedUsers.innerHTML = users.map(function (u) {
+                return '<option value="' + escapeHtml(u.username) + '"></option>';
+            }).join('');
+
+            if (!users.length) {
+                els.usersTableBox.classList.add('hidden');
+                els.usersEmpty.classList.remove('hidden');
+                return;
+            }
+            els.usersEmpty.classList.add('hidden');
+            els.usersTableBox.classList.remove('hidden');
+
+            els.usersTbody.innerHTML = users.map(function (u) {
+                var avatar = u.avatarUrl
+                    ? '<span class="avatar"><img src="' + escapeHtml(u.avatarUrl) + '" alt=""></span>'
+                    : '<span class="avatar">👤</span>';
+                var sub = [];
+                if (u.nickname && u.nickname !== u.username) sub.push('昵称：' + u.nickname);
+                if (u.email) sub.push('邮箱：' + u.email);
+                var banBadge = u.banned
+                    ? '<span class="badge badge-danger">已封禁</span>' + (u.banReason
+                        ? '<div class="reason-line">原因：' + escapeHtml(u.banReason) + '</div>' : '')
+                    : '<span class="badge badge-ok">正常</span>';
+                var globalBadge = u.globalBanned
+                    ? '<span class="badge badge-danger">主站已封禁</span>'
+                    : '<span class="badge badge-muted">主站正常</span>';
+
+                return '<tr>' +
+                    '<td><div class="user-cell">' + avatar + '<div>' +
+                        '<div class="u-name">' + escapeHtml(u.username || '—') + '</div>' +
+                        (sub.length ? '<div class="u-sub">' + escapeHtml(sub.join(' · ')) + '</div>' : '') +
+                    '</div></div></td>' +
+                    '<td><div class="chip-list">' + scopeChips(u.scopes) + '</div></td>' +
+                    '<td class="mono">' + escapeHtml(PlatformUI.formatDate(u.grantedAt)) + '</td>' +
+                    '<td>' + banBadge + '</td>' +
+                    '<td>' + globalBadge + '</td>' +
+                    '<td><div class="actions-cell">' +
+                        (u.banned
+                            ? '<button type="button" class="btn btn-ghost btn-sm" data-unban="' + escapeHtml(u.username) + '">解除封禁</button>'
+                            : '<button type="button" class="btn btn-danger btn-sm" data-ban="' + escapeHtml(u.username) + '">项目内封禁</button>') +
+                        '<button type="button" class="btn btn-warn btn-sm" data-apply="' + escapeHtml(u.username) + '">申请全站封禁</button>' +
+                    '</div></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        async function loadUsers() {
+            els.usersLoading.classList.remove('hidden');
+            els.usersTableBox.classList.add('hidden');
+            els.usersEmpty.classList.add('hidden');
+            els.usersError.classList.add('hidden');
+            try {
+                var data = await apiGet('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/users');
+                var users = PlatformUtil.pickArray(data, ['users', 'items', 'list']).map(PlatformUtil.normalizeGrantUser);
+                state.users = users;
+                renderUsers(users);
+            } catch (err) {
+                els.usersErrorText.textContent = (err && err.message) || '未知错误';
+                els.usersError.classList.remove('hidden');
+            } finally {
+                els.usersLoading.classList.add('hidden');
+            }
+        }
+
+        async function banUser(username) {
+            var reason = await PlatformUI.prompt({
+                title: '项目内封禁 · ' + username,
+                message: '封禁后该用户在你的应用内将被拒绝（可通过校验端口 /api/oauth/check 判断）。此操作不影响用户在 nflshcchat 主站的使用。',
+                label: '封禁原因',
+                placeholder: '请填写封禁原因，例如：在你的项目内刷屏/滥用接口',
+                hint: '原因必填，会记录在项目内封禁名单中。',
+                required: true,
+                rows: 4,
+                danger: true,
+                confirmText: '确认封禁'
+            });
+            if (reason === null) return;
+            try {
+                await apiPost('/api/oauth/clients/' + encodeURIComponent(state.clientId) +
+                    '/users/' + encodeURIComponent(username) + '/ban', { reason: reason });
+                PlatformUI.toast('已在本项目内封禁 ' + username, 'success');
+                await loadUsers();
+            } catch (err) {
+                PlatformUI.toast((err && err.message) || '封禁失败', 'error');
+            }
+        }
+
+        async function unbanUser(username) {
+            var ok = await PlatformUI.confirm({
+                title: '解除项目内封禁',
+                message: '确定要解除对 ' + username + ' 的项目内封禁吗？解除后该用户可以正常使用你的应用。',
+                confirmText: '解除封禁'
+            });
+            if (!ok) return;
+            try {
+                await apiPost('/api/oauth/clients/' + encodeURIComponent(state.clientId) +
+                    '/users/' + encodeURIComponent(username) + '/unban', {});
+                PlatformUI.toast('已解除对 ' + username + ' 的封禁', 'success');
+                await loadUsers();
+            } catch (err) {
+                PlatformUI.toast((err && err.message) || '解除失败', 'error');
+            }
+        }
+
+        /* =============== 全站封禁申请 =============== */
+        function reqStatusBadge(status) {
+            if (status === 'approved') return '<span class="badge badge-ok">已批准</span>';
+            if (status === 'rejected') return '<span class="badge badge-danger">已驳回</span>';
+            if (status === 'pending') return '<span class="badge badge-warn">待审核</span>';
+            return '<span class="badge badge-muted">' + escapeHtml(status || '未知') + '</span>';
+        }
+
+        function renderRequests() {
+            var onlyMine = els.onlyMine.checked;
+            var list = state.allRequests.filter(function (r) {
+                if (!onlyMine) return true;
+                return !r.clientId || r.clientId === state.clientId;
+            });
+            if (!list.length) {
+                els.reqsList.innerHTML = '';
+                els.reqsEmpty.classList.remove('hidden');
+                return;
+            }
+            els.reqsEmpty.classList.add('hidden');
+            els.reqsList.innerHTML = list.map(function (r) {
+                return '<div class="req-item">' +
+                    '<div class="req-item-head">' +
+                        '<span class="req-user">' + escapeHtml(r.username || '(未知用户)') + '</span>' +
+                        reqStatusBadge(r.status) +
+                        (r.clientId ? '<span class="badge badge-muted mono">' + escapeHtml(r.clientId) + '</span>' : '') +
+                        (r.id ? '<span class="badge badge-muted mono">' + escapeHtml(r.id) + '</span>' : '') +
+                    '</div>' +
+                    '<div class="req-reason">' + escapeHtml(r.reason || '(未填写理由)') + '</div>' +
+                    (r.note ? '<div class="req-note"><span class="req-note-label">管理员备注</span>' + escapeHtml(r.note) + '</div>' : '') +
+                    '<div class="req-time">提交时间：' + escapeHtml(PlatformUI.formatDate(r.createdAt)) +
+                        (r.reviewedAt ? ' · 审核时间：' + escapeHtml(PlatformUI.formatDate(r.reviewedAt)) : '') + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        async function loadRequests() {
+            els.reqsLoading.classList.remove('hidden');
+            els.reqsEmpty.classList.add('hidden');
+            els.reqsError.classList.add('hidden');
+            try {
+                var data = await apiGet('/api/oauth/ban-requests');
+                state.allRequests = PlatformUtil.pickArray(data, ['requests', 'banRequests', 'items', 'list'])
+                    .map(PlatformUtil.normalizeBanRequest);
+                renderRequests();
+            } catch (err) {
+                els.reqsErrorText.textContent = (err && err.message) || '未知错误';
+                els.reqsError.classList.remove('hidden');
+            } finally {
+                els.reqsLoading.classList.add('hidden');
+            }
+        }
+
+        function setBanReqMsg(text, type) {
+            els.banReqMsg.textContent = text || '';
+            els.banReqMsg.className = 'form-msg' + (text ? ' show' : '');
+            els.banReqMsg.style.color = type === 'ok' ? 'var(--success)' : 'var(--danger)';
+        }
+
+        async function onSubmitBanRequest(event) {
+            event.preventDefault();
+            setBanReqMsg('');
+            var username = els.brUsername.value.trim();
+            var reason = els.brReason.value.trim();
+            if (!username) { setBanReqMsg('请填写目标用户名'); els.brUsername.focus(); return; }
+            if (!reason) { setBanReqMsg('申请理由必填，请填写详细情况'); els.brReason.focus(); return; }
+
+            els.banReqSubmit.disabled = true;
+            els.banReqSubmit.textContent = '提交中…';
+            try {
+                var data = await apiPost('/api/oauth/ban-requests', {
+                    clientId: state.clientId,
+                    username: username,
+                    reason: reason
+                });
+                setBanReqMsg('申请已提交' + (data && data.status ? '（状态：' + data.status + '）' : '') +
+                    '，等待主站管理员 huangzhiyuan 审核。', 'ok');
+                PlatformUI.toast('全站封禁申请已提交', 'success');
+                els.brReason.value = '';
+                els.brUsername.value = '';
+                await loadRequests();
+            } catch (err) {
+                setBanReqMsg((err && err.message) || '提交失败，请稍后重试');
+            } finally {
+                els.banReqSubmit.disabled = false;
+                els.banReqSubmit.textContent = '提交申请';
+            }
+        }
+
+        /* =============== 数据加载 =============== */
+        async function loadClient() {
+            var data = await apiGet('/api/oauth/clients/' + encodeURIComponent(state.clientId));
+            var raw = (data && (data.client || data.data)) || data;
+            var client = PlatformUtil.normalizeClient(raw);
+            if (!client.id) client.id = state.clientId;
+            state.client = client;
+            renderInfo(client);
+        }
+
+        /* =============== 事件 =============== */
+        function bindEvents() {
+            els.copyClientIdBtn.addEventListener('click', function () {
+                PlatformUI.copy(state.clientId).then(function () {
+                    PlatformUI.toast('已复制 client_id', 'success');
+                }).catch(function () { PlatformUI.toast('复制失败，请手动复制', 'error'); });
+            });
+
+            els.editToggleBtn.addEventListener('click', function () { toggleEdit(); });
+            els.cancelEditBtn.addEventListener('click', function () { toggleEdit(false); });
+            els.editForm.addEventListener('submit', onSaveEdit);
+
+            els.resetSecretBtn.addEventListener('click', resetSecret);
+            els.resetSecretBtn2.addEventListener('click', resetSecret);
+
+            els.reloadUsersBtn.addEventListener('click', loadUsers);
+            els.reloadReqsBtn.addEventListener('click', loadRequests);
+            els.onlyMine.addEventListener('change', renderRequests);
+
+            els.usersTbody.addEventListener('click', function (e) {
+                var t = e.target;
+                var ban = t.getAttribute && t.getAttribute('data-ban');
+                var unban = t.getAttribute && t.getAttribute('data-unban');
+                var apply = t.getAttribute && t.getAttribute('data-apply');
+                if (ban) banUser(ban);
+                else if (unban) unbanUser(unban);
+                else if (apply) {
+                    els.brUsername.value = apply;
+                    els.brReason.focus();
+                    els.banReqForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    PlatformUI.toast('已填入用户名，请补充申请理由后提交', 'warning');
+                }
+            });
+
+            els.banReqForm.addEventListener('submit', onSubmitBanRequest);
+        }
+
+        /* =============== 初始化 =============== */
+        async function init() {
+            var user = await PlatformUI.requireLogin('');
+            if (!user) return;
+
+            var clientId = new URLSearchParams(window.location.search).get('id') || '';
+            if (!clientId) {
+                showFatal('缺少应用参数', 'URL 中缺少 id 参数，请从应用管理页进入。');
+                return;
+            }
+            state.clientId = clientId;
+
+            state.scopes = await PlatformUtil.loadScopes();
+            bindEvents();
+
+            try {
+                await loadClient();
+            } catch (err) {
+                showFatal('应用加载失败', (err && err.message) || '未知错误');
+                return;
+            }
+            els.mainArea.classList.remove('hidden');
+            loadUsers();
+            loadRequests();
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    })();
+    </script>
+</body>
+</html>
