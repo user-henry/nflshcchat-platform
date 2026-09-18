@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffd700">
+    <title>应用管理 · NFLSHC 开放平台</title>
+    <script src="js/theme.js"></script>
+    <link rel="stylesheet" href="css/themes.css">
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Tahoma, Verdana, sans-serif;
+            background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background .4s, color .3s;
+        }
+        .container { max-width: 1180px; margin: 0 auto; padding: 26px 20px 70px; }
+
+        .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+        .page-title {
+            font-size: 26px;
+            letter-spacing: .01em;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .page-sub { color: var(--text-muted); font-size: 13.5px; margin-top: 7px; line-height: 1.7; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stat {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px 18px;
+            transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease;
+        }
+        .stat:hover { transform: translateY(-3px); border-color: var(--accent-color); box-shadow: 0 12px 30px rgba(0,0,0,.26); }
+        .stat-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+        .stat-value { font-size: 26px; font-weight: 700; color: var(--accent-color); margin-top: 6px; }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 14px 40px rgba(0,0,0,.2);
+            margin-bottom: 20px;
+            transition: border-color .25s ease, box-shadow .25s ease;
+        }
+        .card-title { font-size: 17px; color: var(--accent-color); display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; margin-bottom: 18px; }
+
+        .btn {
+            appearance: none; border: 1px solid transparent; border-radius: 11px;
+            padding: 10px 18px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: transform .18s ease, box-shadow .22s ease, background .22s ease, color .22s ease, border-color .22s ease, opacity .22s ease;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)); color: #1a1a2e; box-shadow: 0 8px 20px var(--accent-color-alpha); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 12px 28px var(--accent-color-alpha); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+        .btn-ghost:hover:not(:disabled) { color: var(--text-primary); border-color: var(--accent-color); }
+        .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
+        .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 9px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+        .field { display: flex; flex-direction: column; }
+        .field.full { grid-column: 1 / -1; }
+        .field label { font-size: 13px; color: var(--text-secondary); margin-bottom: 7px; }
+        .req { color: var(--danger); }
+        .input, .textarea {
+            background: var(--input-bg); color: var(--text-primary);
+            border: 1px solid var(--border-color); border-radius: 11px;
+            padding: 11px 13px; font: inherit; font-size: 14px;
+            transition: border-color .2s ease, box-shadow .2s ease;
+            width: 100%;
+        }
+        .textarea { resize: vertical; min-height: 92px; line-height: 1.65; font-family: "Consolas", "Courier New", monospace; font-size: 13px; }
+        .input:focus, .textarea:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-color-alpha); }
+        .field-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.6; }
+
+        .scope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+        .scope-item {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 11px 13px; border: 1px solid var(--border-color); border-radius: 13px;
+            cursor: pointer; background: var(--bg-tertiary);
+            transition: border-color .2s ease, transform .2s ease, background .2s ease;
+        }
+        .scope-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
+        .scope-item input { margin-top: 3px; accent-color: var(--accent-color); width: 16px; height: 16px; cursor: pointer; }
+        .scope-name { display: block; font-size: 13.5px; font-weight: 600; }
+        .scope-desc { display: block; font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.6; }
+        .sens { font-style: normal; font-size: 11px; color: var(--warning); border: 1px solid var(--warning); border-radius: 999px; padding: 1px 7px; margin-left: 6px; }
+
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+        .form-msg { font-size: 13px; color: var(--danger); margin-top: 12px; display: none; line-height: 1.7; }
+        .form-msg.show { display: block; }
+
+        .table-wrap { overflow-x: auto; border-radius: 14px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th {
+            text-align: left; padding: 12px 14px; font-size: 11.5px; letter-spacing: .07em;
+            text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-color); white-space: nowrap;
+        }
+        td { padding: 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tbody tr { transition: background .2s ease; }
+        tbody tr:hover { background: var(--hover-bg); }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .app-name { font-weight: 700; font-size: 14.5px; }
+        .app-link { color: var(--text-primary); text-decoration: none; transition: color .2s ease; }
+        .app-link:hover { color: var(--accent-color); }
+        .app-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; max-width: 340px; }
+        .mono { font-family: "Consolas", "Courier New", monospace; font-size: 12.5px; color: var(--text-secondary); }
+        .cid { display: inline-flex; align-items: center; gap: 8px; }
+        .copy-mini {
+            appearance: none; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted);
+            border-radius: 7px; padding: 2px 7px; font-size: 11.5px; cursor: pointer; transition: all .2s ease;
+        }
+        .copy-mini:hover { color: var(--accent-color); border-color: var(--accent-color); }
+
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border-color); color: var(--text-secondary); white-space: nowrap; }
+        .badge-ok { color: var(--success); border-color: var(--success); background: rgba(40,167,69,.1); }
+        .badge-danger { color: var(--danger); border-color: var(--danger); background: rgba(220,53,69,.1); }
+        .badge-warn { color: var(--warning); border-color: var(--warning); background: rgba(243,156,18,.1); }
+        .badge-muted { color: var(--text-muted); }
+
+        .actions-cell { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .empty, .error-box { text-align: center; padding: 46px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 42px; margin-bottom: 12px; opacity: .8; }
+        .empty h3 { color: var(--text-primary); font-size: 17px; margin-bottom: 8px; }
+        .empty p { font-size: 13.5px; line-height: 1.8; }
+        .skeleton { height: 54px; border-radius: 12px; background: linear-gradient(90deg, var(--bg-tertiary), var(--hover-bg), var(--bg-tertiary)); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; margin-bottom: 10px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .hidden { display: none !important; }
+        #createCard { animation: dropIn .3s cubic-bezier(.22,1,.36,1); }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+        .notice { display: flex; gap: 10px; padding: 13px 15px; border-radius: 13px; background: var(--accent-color-alpha); border: 1px solid var(--border-color); font-size: 13px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; }
+        .notice b { color: var(--accent-color); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-head">
+            <div>
+                <h1 class="page-title">应用管理</h1>
+                <p class="page-sub">创建并管理你的 OAuth 应用，查看授权用户与封禁情况</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="toggleCreateBtn">＋ 创建应用</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat"><div class="stat-label">我的应用</div><div class="stat-value" id="statApps">—</div></div>
+            <div class="stat"><div class="stat-label">授权用户总数</div><div class="stat-value" id="statUsers">—</div></div>
+            <div class="stat"><div class="stat-label">正常应用</div><div class="stat-value" id="statActive">—</div></div>
+            <div class="stat"><div class="stat-label">已停用</div><div class="stat-value" id="statSuspended">—</div></div>
+        </div>
+
+        <div class="notice">
+            <span>💡</span>
+            <div>
+                <b>client_secret</b> 只在创建或重置时返回一次，服务端仅保存哈希，请务必立即保存。
+                接入方式见 <a href="guide.html" style="color:var(--accent-color)">接入指南</a>。
+            </div>
+        </div>
+
+        <div class="card hidden" id="createCard">
+            <h2 class="card-title">🚀 创建新应用</h2>
+            <p class="card-desc">填写应用信息并勾选需要的权限范围。回调地址必须与实际使用的完全一致，否则授权会被拒绝。</p>
+            <form id="createForm" novalidate>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="f-name">应用名称 <span class="req">*</span></label>
+                        <input class="input" type="text" id="f-name" placeholder="例如：我的聊天机器人" maxlength="60" required>
+                    </div>
+                    <div class="field">
+                        <label for="f-homepage">应用主页</label>
+                        <input class="input" type="url" id="f-homepage" placeholder="https://example.com" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="f-logo">应用图标 URL</label>
+                        <input class="input" type="url" id="f-logo" placeholder="https://example.com/logo.png" spellcheck="false">
+                    </div>
+                    <div class="field">
+                        <label for="f-redirects">回调地址（redirect_uri） <span class="req">*</span></label>
+                        <textarea class="textarea" id="f-redirects" rows="3"
+                            placeholder="https://example.com/callback&#10;https://example.com/oauth/callback"></textarea>
+                        <div class="field-hint">每行一个，需以 http:// 或 https:// 开头；授权回跳时地址必须与这里完全一致。</div>
+                    </div>
+                    <div class="field full">
+                        <label for="f-description">应用简介</label>
+                        <textarea class="textarea" id="f-description" rows="3" style="font-family:inherit;font-size:14px"
+                            placeholder="简单描述你的应用用途，用户会在授权页看到"></textarea>
+                    </div>
+                    <div class="field full">
+                        <label>申请权限（scope） <span class="req">*</span></label>
+                        <div class="scope-grid" id="scopeGrid"></div>
+                        <div class="field-hint">敏感权限（邮箱、消息内容）会在授权页向用户高亮提示，用户可选择拒绝。</div>
+                    </div>
+                </div>
+                <div class="form-msg" id="createMsg"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-ghost" id="cancelCreateBtn">取消</button>
+                    <button type="submit" class="btn btn-primary" id="submitCreateBtn">创建应用</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">📦 我的应用</h2>
+            <p class="card-desc">点击应用名称可进入详情页，管理授权用户、项目内封禁与全站封禁申请。</p>
+
+            <div id="loadingBox">
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+            </div>
+
+            <div class="empty hidden" id="emptyBox">
+                <div class="empty-icon">📭</div>
+                <h3>还没有任何应用</h3>
+                <p>点击右上角「创建应用」开始接入 NFLSHC 账号体系。</p>
+            </div>
+
+            <div class="empty hidden" id="errorBox">
+                <div class="empty-icon">⚠️</div>
+                <h3>应用列表加载失败</h3>
+                <p id="errorText">请稍后重试。</p>
+                <div style="margin-top:16px"><button type="button" class="btn btn-ghost" id="retryBtn">重新加载</button></div>
+            </div>
+
+            <div class="table-wrap hidden" id="tableBox">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>应用名称</th>
+                            <th>client_id</th>
+                            <th>授权用户数</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th style="text-align:right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        var state = { clients: [], scopes: [] };
+
+        var els = {
+            toggleCreate: document.getElementById('toggleCreateBtn'),
+            createCard: document.getElementById('createCard'),
+            createForm: document.getElementById('createForm'),
+            cancelCreate: document.getElementById('cancelCreateBtn'),
+            submitCreate: document.getElementById('submitCreateBtn'),
+            createMsg: document.getElementById('createMsg'),
+            scopeGrid: document.getElementById('scopeGrid'),
+            fName: document.getElementById('f-name'),
+            fDesc: document.getElementById('f-description'),
+            fHome: document.getElementById('f-homepage'),
+            fLogo: document.getElementById('f-logo'),
+            fRedirects: document.getElementById('f-redirects'),
+            loading: document.getElementById('loadingBox'),
+            empty: document.getElementById('emptyBox'),
+            errorBox: document.getElementById('errorBox'),
+            errorText: document.getElementById('errorText'),
+            retry: document.getElementById('retryBtn'),
+            tableBox: document.getElementById('tableBox'),
+            tbody: document.getElementById('clientTableBody'),
+            statApps: document.getElementById('statApps'),
+            statUsers: document.getElementById('statUsers'),
+            statActive: document.getElementById('statActive'),
+            statSuspended: document.getElementById('statSuspended')
+        };
+
+        /* ---------------- 权限勾选组 ---------------- */
+        function renderScopeGrid(scopes) {
+            els.scopeGrid.innerHTML = scopes.map(function (s) {
+                var checked = s.key === 'profile' ? ' checked' : '';
+                var sens = s.sensitive ? '<em class="sens">敏感</em>' : '';
+                return '<label class="scope-item">' +
+                    '<input type="checkbox" value="' + escapeHtml(s.key) + '"' + checked + '>' +
+                    '<span><span class="scope-name">' + escapeHtml(s.name || s.key) + sens + '</span>' +
+                    '<span class="scope-desc">' + escapeHtml(s.desc || '') + '</span></span>' +
+                    '</label>';
+            }).join('');
+        }
+
+        function selectedScopes() {
+            return Array.prototype.slice.call(els.scopeGrid.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(function (i) { return i.value; });
+        }
+
+        /* ---------------- 表单提示 ---------------- */
+        function showFormMsg(text) {
+            els.createMsg.textContent = text || '';
+            els.createMsg.className = 'form-msg' + (text ? ' show' : '');
+        }
+
+        function toggleCreateForm(show) {
+            var willShow = (show === undefined) ? els.createCard.classList.contains('hidden') : !!show;
+            els.createCard.classList.toggle('hidden', !willShow);
+            els.toggleCreate.textContent = willShow ? '收起表单' : '＋ 创建应用';
+            if (willShow) {
+                showFormMsg('');
+                els.fName.focus();
+                els.createCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        /* ---------------- 列表渲染 ---------------- */
+        function statusBadge(status) {
+            var s = String(status || '').toLowerCase();
+            if (s === 'active') return '<span class="badge badge-ok">正常运行</span>';
+            if (s === 'suspended' || s === 'disabled') return '<span class="badge badge-danger">已停用</span>';
+            if (s === 'pending') return '<span class="badge badge-warn">待审核</span>';
+            return '<span class="badge badge-muted">' + escapeHtml(status || '未知') + '</span>';
+        }
+
+        function renderClients(clients) {
+            if (!clients.length) {
+                els.tableBox.classList.add('hidden');
+                els.empty.classList.remove('hidden');
+                return;
+            }
+            els.empty.classList.add('hidden');
+            els.tableBox.classList.remove('hidden');
+            els.tbody.innerHTML = clients.map(function (c) {
+                var count = (c.userCount === null || c.userCount === undefined) ? '—' : String(c.userCount) + ' 人';
+                return '<tr>' +
+                    '<td>' +
+                    '<div class="app-name"><a class="app-link" href="app.html?id=' + encodeURIComponent(c.id) + '">' +
+                        escapeHtml(c.name) + '</a></div>' +
+                    (c.description ? '<div class="app-desc">' + escapeHtml(c.description) + '</div>' : '') +
+                    (c.homepage ? '<div class="app-desc">🔗 <a class="app-link" style="color:var(--text-muted)" href="' +
+                        escapeHtml(c.homepage) + '" target="_blank" rel="noopener">' + escapeHtml(c.homepage) + '</a></div>' : '') +
+                    '</td>' +
+                    '<td><span class="cid"><span class="mono">' + escapeHtml(c.id) + '</span>' +
+                        '<button type="button" class="copy-mini" data-copy="' + escapeHtml(c.id) + '">复制</button></span></td>' +
+                    '<td class="mono">' + escapeHtml(count) + '</td>' +
+                    '<td>' + statusBadge(c.status) + '</td>' +
+                    '<td class="mono">' + escapeHtml(PlatformUI.formatDate(c.createdAt)) + '</td>' +
+                    '<td><div class="actions-cell">' +
+                        '<a class="btn btn-ghost btn-sm" href="app.html?id=' + encodeURIComponent(c.id) + '">详情</a>' +
+                        '<button type="button" class="btn btn-danger btn-sm" data-del="' + escapeHtml(c.id) + '" data-name="' +
+                            escapeHtml(c.name) + '">删除</button>' +
+                    '</div></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function renderStats(clients) {
+            var users = 0, active = 0, suspended = 0, hasCount = false;
+            clients.forEach(function (c) {
+                if (typeof c.userCount === 'number') { users += c.userCount; hasCount = true; }
+                var s = String(c.status || '').toLowerCase();
+                if (s === 'active' || s === '') active++;
+                else if (s === 'suspended' || s === 'disabled') suspended++;
+            });
+            els.statApps.textContent = clients.length;
+            els.statUsers.textContent = hasCount ? users : '—';
+            els.statActive.textContent = active;
+            els.statSuspended.textContent = suspended;
+        }
+
+        /* ---------------- 数据加载 ---------------- */
+        async function loadClients() {
+            els.loading.classList.remove('hidden');
+            els.tableBox.classList.add('hidden');
+            els.empty.classList.add('hidden');
+            els.errorBox.classList.add('hidden');
+            try {
+                var data = await apiGet('/api/oauth/clients');
+                var list = PlatformUtil.pickArray(data, ['clients', 'apps', 'items', 'list'])
+                    .map(PlatformUtil.normalizeClient);
+                state.clients = list;
+                renderStats(list);
+                renderClients(list);
+            } catch (err) {
+                els.errorText.textContent = (err && err.message) || '未知错误';
+                els.errorBox.classList.remove('hidden');
+            } finally {
+                els.loading.classList.add('hidden');
+            }
+        }
+
+        /* ---------------- 创建应用 ---------------- */
+        function parseRedirectUris(text) {
+            return String(text || '').split(/[\s,，;；]+/).map(function (s) { return s.trim(); })
+                .filter(function (s) { return !!s; });
+        }
+
+        async function onCreateSubmit(event) {
+            event.preventDefault();
+            showFormMsg('');
+
+            var name = els.fName.value.trim();
+            var redirects = parseRedirectUris(els.fRedirects.value);
+            var scopes = selectedScopes();
+
+            if (!name) { showFormMsg('请填写应用名称'); els.fName.focus(); return; }
+            if (!redirects.length) { showFormMsg('请至少填写一个回调地址'); els.fRedirects.focus(); return; }
+            var bad = redirects.filter(function (u) { return !/^https?:\/\/.+/i.test(u); });
+            if (bad.length) { showFormMsg('回调地址格式不正确（需以 http:// 或 https:// 开头）：' + bad[0]); return; }
+            if (!scopes.length) { showFormMsg('请至少勾选一个权限（scope）'); return; }
+
+            els.submitCreate.disabled = true;
+            els.submitCreate.textContent = '创建中…';
+
+            try {
+                var data = await apiPost('/api/oauth/clients', {
+                    name: name,
+                    description: els.fDesc.value.trim(),
+                    homepage: els.fHome.value.trim(),
+                    logo: els.fLogo.value.trim(),
+                    redirectUris: redirects,
+                    scopes: scopes
+                });
+
+                var secret = (data && (data.clientSecret || data.client_secret)) || '';
+                var client = PlatformUtil.normalizeClient((data && data.client) || data);
+
+                els.createForm.reset();
+                renderScopeGrid(state.scopes);
+                toggleCreateForm(false);
+                await loadClients();
+
+                if (secret) {
+                    await PlatformUI.secret({
+                        title: '创建成功 · 应用密钥',
+                        secret: secret,
+                        hint: '应用 ' + (client.name || name) + '（' + (client.id || '') + '）已创建。' +
+                              '密钥也可在应用详情页重置，但重置后旧密钥立即失效。'
+                    });
+                    PlatformUI.toast('应用「' + (client.name || name) + '」创建成功', 'success');
+                } else {
+                    PlatformUI.toast('应用创建成功，但服务端未返回 clientSecret，请到详情页重置密钥', 'warning');
+                }
+            } catch (err) {
+                showFormMsg((err && err.message) || '创建失败，请稍后重试');
+            } finally {
+                els.submitCreate.disabled = false;
+                els.submitCreate.textContent = '创建应用';
+            }
+        }
+
+        /* ---------------- 删除应用 ---------------- */
+        async function deleteClient(id, name) {
+            var ok = await PlatformUI.confirm({
+                title: '删除应用',
+                message: '确定要删除应用「' + (name || id) + '」吗？\n\n删除后该应用的所有授权、令牌与项目内封禁记录都会级联清理，且无法恢复。',
+                confirmText: '确认删除',
+                danger: true
+            });
+            if (!ok) return;
+            try {
+                await apiDelete('/api/oauth/clients/' + encodeURIComponent(id));
+                PlatformUI.toast('应用已删除', 'success');
+                await loadClients();
+            } catch (err) {
+                PlatformUI.toast((err && err.message) || '删除失败', 'error');
+            }
+        }
+
+        /* ---------------- 事件绑定 ---------------- */
+        function bindEvents() {
+            els.toggleCreate.addEventListener('click', function () { toggleCreateForm(); });
+            els.cancelCreate.addEventListener('click', function () { toggleCreateForm(false); });
+            els.createForm.addEventListener('submit', onCreateSubmit);
+
+            els.retry.addEventListener('click', function () { loadClients(); });
+
+            els.tbody.addEventListener('click', function (e) {
+                var target = e.target;
+                var copyVal = target.getAttribute && target.getAttribute('data-copy');
+                if (copyVal) {
+                    PlatformUI.copy(copyVal).then(function () {
+                        PlatformUI.toast('已复制 client_id', 'success');
+                    }).catch(function () { PlatformUI.toast('复制失败，请手动复制', 'error'); });
+                    return;
+                }
+                var delId = target.getAttribute && target.getAttribute('data-del');
+                if (delId) deleteClient(delId, target.getAttribute('data-name'));
+            });
+        }
+
+        /* ---------------- 初始化 ---------------- */
+        async function init() {
+            var user = await PlatformUI.requireLogin('dashboard');
+            if (!user) return;
+            bindEvents();
+            state.scopes = await PlatformUtil.loadScopes();
+            renderScopeGrid(state.scopes);
+            await loadClients();
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+    })();
+    </script>
+</body>
+</html>
