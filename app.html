@@ -171,6 +171,42 @@
         .req-time { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
         .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; color: var(--text-secondary); }
         .filter-row input[type="checkbox"] { accent-color: var(--accent-color); width: 15px; height: 15px; }
+
+        /* ===== Webhook / Bot 配置区 ===== */
+        .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+        .check-item {
+            display: flex; gap: 9px; align-items: flex-start; cursor: pointer;
+            padding: 10px 12px; border-radius: 10px; font-size: 13px;
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+            transition: border-color .18s;
+        }
+        .check-item:hover { border-color: var(--accent-color); }
+        .check-item input { margin-top: 3px; accent-color: var(--accent-color); }
+        .check-item .ci-desc { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+        .switch-line { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; }
+        .switch-line input { accent-color: var(--accent-color); width: 16px; height: 16px; }
+        .secret-box {
+            margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+            background: rgba(243, 156, 18, .1); border: 1px solid rgba(243, 156, 18, .45);
+        }
+        .secret-title { font-size: 13px; color: #f7c46c; margin-bottom: 8px; font-weight: 600; }
+        .secret-value {
+            font-size: 12.5px; word-break: break-all; padding: 9px 12px; border-radius: 8px;
+            background: var(--bg-primary); border: 1px dashed var(--border-color); margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+        .status-line { margin-top: 14px; font-size: 12.5px; color: var(--text-muted); line-height: 1.9; }
+        .status-line .ok { color: var(--success, #2ecc71); }
+        .status-line .bad { color: var(--danger, #e74c3c); }
+        .code-hint {
+            margin-top: 18px; padding: 14px 16px; border-radius: 12px;
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+        }
+        .code-hint-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .code-hint pre {
+            font-size: 12px; line-height: 1.75; white-space: pre-wrap; word-break: break-all;
+            color: var(--text-secondary); margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -381,6 +417,87 @@
                         <p id="reqsErrorText"></p>
                     </div>
                     <div class="req-list" id="reqsList"></div>
+                </div>
+            </div>
+
+            <!-- Webhook 事件订阅 -->
+            <div class="card">
+                <h2 class="card-title">🔔 Webhook 事件订阅</h2>
+                <p class="card-desc">
+                    当已授权你应用的用户产生事件时，我们会向你填写的地址 POST 一条 JSON。
+                    请求头包含 <span class="mono">X-NFLSHC-Event</span>（事件名）、<span class="mono">X-NFLSHC-Client</span>（你的 client_id）
+                    与 <span class="mono">X-NFLSHC-Signature</span>（<span class="mono">sha256=&lt;HMAC-SHA256(密钥, 请求体)&gt;</span>，用于校验来源）。
+                </p>
+
+                <form id="whForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field full">
+                            <label for="wh-url">Webhook 地址 <span class="req">*</span></label>
+                            <input class="input" type="url" id="wh-url" placeholder="https://你的服务端/webhook" spellcheck="false">
+                            <div class="field-hint">必须是可公网访问的 HTTPS 地址，收到后请在 10 秒内返回 2xx。</div>
+                        </div>
+                        <div class="field full">
+                            <label>订阅事件（不勾选 = 订阅全部）</label>
+                            <div id="whEvents" class="check-grid"><div class="skeleton" style="height:20px"></div></div>
+                        </div>
+                        <div class="field full">
+                            <label class="switch-line">
+                                <input type="checkbox" id="wh-active" checked> 启用该 Webhook
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-msg" id="whMsg"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="whSaveBtn">保存配置</button>
+                        <button type="button" class="btn btn-ghost" id="whTestBtn">发送测试事件</button>
+                        <button type="button" class="btn btn-ghost" id="whRotateBtn">重置签名密钥</button>
+                        <button type="button" class="btn btn-danger btn-sm" id="whDelBtn">删除配置</button>
+                    </div>
+                </form>
+
+                <div id="whSecretBox" class="secret-box hidden">
+                    <div class="secret-title">⚠️ 签名密钥（仅显示一次，请立即保存）</div>
+                    <div class="secret-value mono" id="whSecretValue">—</div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="whSecretCopy">📋 复制密钥</button>
+                </div>
+
+                <div id="whStatus" class="status-line"></div>
+            </div>
+
+            <!-- 机器人 Bot API -->
+            <div class="card">
+                <h2 class="card-title">🤖 机器人（Bot API）</h2>
+                <p class="card-desc">
+                    登记为机器人后，你可以用 <span class="mono">client_id</span> + <span class="mono">client_secret</span>
+                    以机器人身份在聊天室收发消息（服务端到服务端调用，无需用户登录）。机器人出现在应用目录时会带「机器人」标识。
+                </p>
+
+                <form id="botForm" novalidate>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="switch-line">
+                                <input type="checkbox" id="bot-enabled"> 将本应用登记为机器人
+                            </label>
+                            <div class="field-hint">关闭后 Bot API 仍可用，但应用目录不再标注为机器人。</div>
+                        </div>
+                        <div class="field">
+                            <label for="bot-username">机器人显示名</label>
+                            <input class="input" type="text" id="bot-username" placeholder="例如：NFLSHC 助手" maxlength="40" spellcheck="false">
+                            <div class="field-hint">群聊消息里显示的发送者名称（留空则用应用名）。</div>
+                        </div>
+                    </div>
+                    <div class="form-msg" id="botMsg"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="botSaveBtn">保存机器人设置</button>
+                    </div>
+                </form>
+
+                <div class="code-hint">
+                    <div class="code-hint-title">📡 接口速查</div>
+                    <pre class="mono">POST /api/bot/join      { client_id, client_secret, room_id }
+POST /api/bot/send      { client_id, client_secret, room_id, content }
+GET  /api/bot/messages?client_id=&client_secret=&room_id=&limit=50</pre>
+                    <button type="button" class="btn btn-ghost btn-sm" id="botCopyBtn">📋 复制接口说明</button>
                 </div>
             </div>
         </div>
@@ -894,10 +1011,162 @@
             els.mainArea.classList.remove('hidden');
             loadUsers();
             loadRequests();
+            loadWebhook();
+            loadBotConfig();
         }
 
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
         else init();
+
+        /* =============== Webhook 配置 =============== */
+        var whEventsMeta = [];
+
+        async function loadWebhook() {
+            var grid = document.getElementById('whEvents');
+            try {
+                var data = await apiGet('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/webhook');
+                whEventsMeta = data.availableEvents || [];
+                grid.innerHTML = whEventsMeta.map(function (e) {
+                    return '<label class="check-item"><input type="checkbox" class="wh-ev" value="' + escapeHtml(e.event) + '">' +
+                        '<span><b class="mono">' + escapeHtml(e.event) + '</b>' +
+                        '<span class="ci-desc">' + escapeHtml(e.desc) + '</span></span></label>';
+                }).join('') || '<div class="field-hint">暂无可用事件</div>';
+
+                var wh = data.webhook;
+                if (wh) {
+                    document.getElementById('wh-url').value = wh.url || '';
+                    document.getElementById('wh-active').checked = wh.active !== false;
+                    var selected = wh.events || [];
+                    Array.prototype.forEach.call(document.querySelectorAll('.wh-ev'), function (cb) {
+                        if (selected.length === 0) cb.checked = true; // 空 = 订阅全部
+                        else cb.checked = selected.indexOf(cb.value) !== -1;
+                    });
+                    var st = document.getElementById('whStatus');
+                    var statusText = wh.lastStatus === null || wh.lastStatus === undefined
+                        ? '尚未投递过事件'
+                        : ('最近一次投递：HTTP ' + wh.lastStatus + (wh.lastError ? ('（' + escapeHtml(wh.lastError) + '）') : ' 成功'));
+                    st.innerHTML = '状态：' + (wh.lastStatus && wh.lastStatus >= 200 && wh.lastStatus < 300 ? '<span class="ok">' + statusText + '</span>' : statusText) +
+                        (wh.lastAt ? (' · ' + PlatformUtil.formatDate(wh.lastAt)) : '') +
+                        (wh.hasSecret ? ' · 已设置签名密钥' : ' · 未设置签名密钥');
+                } else {
+                    var st2 = document.getElementById('whStatus');
+                    st2.textContent = '尚未配置 Webhook（未配置时不会推送任何事件）';
+                    Array.prototype.forEach.call(document.querySelectorAll('.wh-ev'), function (cb) { cb.checked = true; });
+                }
+            } catch (e) {
+                grid.innerHTML = '<div class="field-hint" style="color:var(--danger,#e74c3c)">事件列表加载失败：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        function whSelectedEvents() {
+            var all = Array.prototype.slice.call(document.querySelectorAll('.wh-ev'));
+            var checked = all.filter(function (cb) { return cb.checked; });
+            return checked.length === all.length ? [] : checked.map(function (cb) { return cb.value; });
+        }
+
+        async function saveWebhook(e) {
+            if (e) e.preventDefault();
+            var msg = document.getElementById('whMsg');
+            var url = document.getElementById('wh-url').value.trim();
+            if (!url) { msg.textContent = '请填写 Webhook 地址'; msg.className = 'form-msg error'; return; }
+            try {
+                var res = await apiPatch('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/webhook', {
+                    url: url, events: whSelectedEvents(), active: document.getElementById('wh-active').checked
+                });
+                msg.textContent = '✅ 保存成功';
+                msg.className = 'form-msg ok';
+                if (res && res.secret) {
+                    document.getElementById('whSecretValue').textContent = res.secret;
+                    document.getElementById('whSecretBox').classList.remove('hidden');
+                }
+                PlatformUI.toast('Webhook 配置已保存', 'success');
+                loadWebhook();
+            } catch (err) {
+                msg.textContent = '保存失败：' + err.message;
+                msg.className = 'form-msg error';
+            }
+        }
+
+        async function testWebhook() {
+            try {
+                var r = await apiPost('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/webhook/test', {});
+                var msg = document.getElementById('whMsg');
+                msg.textContent = r.lastStatus >= 200 && r.lastStatus < 300
+                    ? ('✅ 测试事件投递成功（HTTP ' + r.lastStatus + '）')
+                    : ('⚠️ 测试事件投递失败：HTTP ' + r.lastStatus + (r.lastError ? (' ' + r.lastError) : ''));
+                msg.className = 'form-msg ' + (r.lastStatus >= 200 && r.lastStatus < 300 ? 'ok' : 'error');
+                loadWebhook();
+            } catch (e) { PlatformUI.toast('测试失败：' + e.message, 'error'); }
+        }
+
+        async function rotateWebhookSecret() {
+            if (!confirm('重置后旧密钥立即失效，你的服务端需要同步更新。确定继续吗？')) return;
+            try {
+                var url = document.getElementById('wh-url').value.trim();
+                if (!url) { PlatformUI.toast('请先填写并保存 Webhook 地址', 'warning'); return; }
+                var res = await apiPatch('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/webhook', {
+                    url: url, events: whSelectedEvents(), active: document.getElementById('wh-active').checked, rotateSecret: true
+                });
+                document.getElementById('whSecretValue').textContent = res.secret || '—';
+                document.getElementById('whSecretBox').classList.remove('hidden');
+                PlatformUI.toast('签名密钥已重置', 'success');
+            } catch (e) { PlatformUI.toast('重置失败：' + e.message, 'error'); }
+        }
+
+        async function deleteWebhook() {
+            if (!confirm('确定删除该 Webhook 配置吗？删除后不再推送任何事件。')) return;
+            try {
+                await apiDelete('/api/oauth/clients/' + encodeURIComponent(state.clientId) + '/webhook');
+                document.getElementById('wh-url').value = '';
+                document.getElementById('whSecretBox').classList.add('hidden');
+                PlatformUI.toast('Webhook 配置已删除', 'success');
+                loadWebhook();
+            } catch (e) { PlatformUI.toast('删除失败：' + e.message, 'error'); }
+        }
+
+        /* =============== 机器人配置 =============== */
+        async function loadBotConfig() {
+            try {
+                var data = await apiGet('/api/oauth/clients/' + encodeURIComponent(state.clientId));
+                var c = data.client || {};
+                document.getElementById('bot-enabled').checked = !!c.isBot;
+                document.getElementById('bot-username').value = c.botUsername || '';
+            } catch (e) { /* 忽略，用户可手动提交 */ }
+        }
+
+        async function saveBotConfig(e) {
+            if (e) e.preventDefault();
+            var msg = document.getElementById('botMsg');
+            try {
+                await apiPatch('/api/oauth/clients/' + encodeURIComponent(state.clientId), {
+                    isBot: document.getElementById('bot-enabled').checked,
+                    botUsername: document.getElementById('bot-username').value.trim()
+                });
+                msg.textContent = '✅ 机器人设置已保存';
+                msg.className = 'form-msg ok';
+                PlatformUI.toast('机器人设置已保存', 'success');
+            } catch (err) {
+                msg.textContent = '保存失败：' + err.message;
+                msg.className = 'form-msg error';
+            }
+        }
+
+        document.getElementById('whForm').addEventListener('submit', saveWebhook);
+        document.getElementById('whTestBtn').addEventListener('click', testWebhook);
+        document.getElementById('whRotateBtn').addEventListener('click', rotateWebhookSecret);
+        document.getElementById('whDelBtn').addEventListener('click', deleteWebhook);
+        document.getElementById('botForm').addEventListener('submit', saveBotConfig);
+        document.getElementById('whSecretCopy').addEventListener('click', function () {
+            PlatformUI.copy(document.getElementById('whSecretValue').textContent);
+            PlatformUI.toast('密钥已复制', 'success');
+        });
+        document.getElementById('botCopyBtn').addEventListener('click', function () {
+            PlatformUI.copy('POST /api/bot/join      { client_id, client_secret, room_id }\n' +
+                'POST /api/bot/send      { client_id, client_secret, room_id, content }\n' +
+                'GET  /api/bot/messages?client_id=&client_secret=&room_id=&limit=50\n' +
+                '提示：client_secret 只在创建/重置时显示一次，请妥善保管。');
+            PlatformUI.toast('接口说明已复制', 'success');
+        });
     })();
     </script>
 </body>
