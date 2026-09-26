@@ -185,6 +185,18 @@
                     <button type="submit" class="btn-submit" id="submitBtn">登录</button>
                 </form>
 
+                <!-- 使用 Google 账号登录（服务端未配置时自动隐藏） -->
+                <button type="button" id="googleLoginBtn" onclick="startGoogleLogin()"
+                        style="display:none;width:100%;margin-top:12px;padding:12px;background:#fff;color:#3c4043;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;align-items:center;justify-content:center;gap:10px;">
+                    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style="flex:0 0 18px;">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    使用 Google 账号登录
+                </button>
+
                 <div class="msg" id="message" role="alert"></div>
 
                 <div class="card-foot">
@@ -389,10 +401,63 @@
             }
         }
 
+        /* ---------- Google 账号登录 ---------- */
+        var WORKER_BASE = 'https://worker.nflshcchat.cc.cd';
+
+        async function initGoogleLogin() {
+            var btn = document.getElementById('googleLoginBtn');
+            if (!btn) return;
+            try {
+                var r = await fetch(WORKER_BASE + '/api/auth/google/config');
+                var j = await r.json().catch(function () { return {}; });
+                if (j && j.enabled) btn.style.display = 'flex';
+            } catch (e) { /* 查询失败保持隐藏 */ }
+        }
+
+        window.startGoogleLogin = function () {
+            var redirect = location.origin + '/index.html' + location.search;
+            location.href = WORKER_BASE + '/api/auth/google/start?redirect=' + encodeURIComponent(redirect);
+        };
+
+        // Google 回跳：#google_login=<ticket> / #google_error=<msg>
+        async function handleGoogleCallback() {
+            var hash = location.hash || '';
+            var errMatch = hash.match(/google_error=([^&]+)/);
+            var okMatch = hash.match(/google_login=([A-Za-z0-9]+)/);
+            if (errMatch) {
+                showMessage(decodeURIComponent(errMatch[1]), 'error');
+                history.replaceState(null, '', location.pathname + location.search);
+                return false;
+            }
+            if (!okMatch) return false;
+            history.replaceState(null, '', location.pathname + location.search);
+            showMessage('正在完成 Google 登录…', 'ok');
+            try {
+                var res = await fetch(WORKER_BASE + '/api/auth/google/exchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket: okMatch[1] })
+                });
+                var data = await res.json().catch(function () { return {}; });
+                if (!res.ok || !data.ok) throw new Error(data.error || 'Google 登录失败');
+                if (window.AuthToken) window.AuthToken.set(data.token);
+                try { localStorage.setItem('nflshc_currentUser', JSON.stringify({ username: data.username, isAdmin: !!data.isAdmin })); } catch (e) { /* 忽略 */ }
+                showMessage('Google 登录成功，正在进入开发者平台…', 'ok');
+                setTimeout(gotoDashboard, 400);
+                return true;
+            } catch (e) {
+                showMessage(e.message || 'Google 登录失败', 'error');
+                return false;
+            }
+        }
+
         /* ---------- 初始化 ---------- */
         initThemeSelect();
         els.form.addEventListener('submit', onSubmit);
-        checkAlreadyLoggedIn();
+        initGoogleLogin();
+        handleGoogleCallback().then(function (handled) {
+            if (!handled) checkAlreadyLoggedIn();
+        });
     })();
     </script>
 </body>
