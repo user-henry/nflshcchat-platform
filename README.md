@@ -1,3 +1,5 @@
+**简体中文** | [English](README.en.md)
+
 # NFLSHC 开放平台 · 开发者站点
 
 NFLSHC OAuth 开放平台的**开发者前端站点**（纯静态 HTML/CSS/JS，无构建步骤、无 npm 依赖、无外部 CDN 框架），
