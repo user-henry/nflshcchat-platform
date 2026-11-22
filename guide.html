@@ -134,8 +134,9 @@
             <a href="#scopes">③ 权限 scope</a>
             <a href="#code">④ 示例代码</a>
             <a href="#check">⑤ 校验端口</a>
-            <a href="#errors">⑥ 错误码</a>
-            <a href="#security">⑦ 安全建议</a>
+            <a href="#ai">⑥ 调用 AI</a>
+            <a href="#errors">⑦ 错误码</a>
+            <a href="#security">⑧ 安全建议</a>
         </nav>
 
         <div class="card" id="flow">
@@ -508,8 +509,122 @@ Content-Type: application/json
             </div>
         </div>
 
+        <!-- ================= AI 能力（hzyai-worker 网关） ================= -->
+        <div class="card" id="ai">
+            <h2 class="card-title">⑥ 调用 AI 能力（对话 / 绘图 / 视频 / 语音）</h2>
+            <p class="card-desc">
+                HZYAI 的 AI 能力通过网关 <code>https://hzyai-worker.nflshcchat.cc.cd</code> 提供，
+                鉴权<b>直接复用你拿到的 <code>access_token</code></b>（<code>Authorization: Bearer</code>），不需要额外申请任何密钥。
+                用户授权时勾选了对应权限，你才能调用相应的端点；没勾选会返回 <code>403 insufficient_scope</code>。
+            </p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>端点</th><th>能力</th><th>需要的 scope</th></tr></thead>
+                    <tbody>
+                        <tr><td class="mono">POST /chat</td><td>文本对话 / 讲题</td><td class="mono">ai:chat</td></tr>
+                        <tr><td class="mono">POST /vision</td><td>图片理解（看图说话 / 拍照讲题）</td><td class="mono">ai:chat</td></tr>
+                        <tr><td class="mono">POST /image</td><td>文生图 / 图生图</td><td class="mono">ai:image</td></tr>
+                        <tr><td class="mono">POST /video</td><td>视频生成</td><td class="mono">ai:video</td></tr>
+                        <tr><td class="mono">POST /stt</td><td>语音转文字</td><td class="mono">ai:stt</td></tr>
+                        <tr><td class="mono">POST /tts</td><td>文字转语音</td><td class="mono">ai:stt</td></tr>
+                        <tr><td class="mono">GET /ai/scopes</td><td>自检：这个令牌能调哪些 AI 端点</td><td>带上令牌即可</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="code-block" style="margin-top:14px">
+                <div class="code-head">
+                    <span class="code-lang">curl：一次对话（复制即可跑）</span>
+                    <button type="button" class="copy-code" data-target="code-ai-curl">复制</button>
+                </div>
+                <pre><code id="code-ai-curl">curl -X POST https://hzyai-worker.nflshcchat.cc.cd/chat \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"用一句话解释什么是 Cloudflare D1"}],"max_tokens":256}'</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">JavaScript（浏览器 / Node 18+）</span>
+                    <button type="button" class="copy-code" data-target="code-ai-js">复制</button>
+                </div>
+                <pre><code id="code-ai-js">const AI_GATEWAY = 'https://hzyai-worker.nflshcchat.cc.cd';
+
+// accessToken 来自授权流程（2 小时有效，过期用 refresh_token 换新的）
+async function aiChat(accessToken, question) {
+  const res = await fetch(AI_GATEWAY + '/chat', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,   // 复用 OAuth 的 access_token
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: question }],
+      max_tokens: 1024,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    // 403 insufficient_scope → 用户没授权 ai:chat，引导重新授权时勾上
+    throw new Error(data.error || ('HTTP ' + res.status));
+  }
+  return data.response;   // 纯文本回答
+}
+
+// 绘图（需要 ai:image）
+async function aiImage(accessToken, prompt) {
+  const res = await fetch(AI_GATEWAY + '/image', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, width: 1024, height: 1024 }),
+  });
+  if (!res.ok) throw new Error('绘图失败：HTTP ' + res.status);
+  // 返回的是二进制图片
+  return await res.blob();
+}</code></pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-head">
+                    <span class="code-lang">Python（requests）</span>
+                    <button type="button" class="copy-code" data-target="code-ai-py">复制</button>
+                </div>
+                <pre><code id="code-ai-py">import json, requests
+
+AI_GATEWAY = "https://hzyai-worker.nflshcchat.cc.cd"
+
+def ai_chat(access_token: str, question: str, max_tokens: int = 1024) -> str:
+    r = requests.post(
+        AI_GATEWAY + "/chat",
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        data=json.dumps({"messages": [{"role": "user", "content": question}], "max_tokens": max_tokens}),
+        timeout=60,
+    )
+    if r.status_code == 403:
+        raise RuntimeError("用户未授权 ai:chat（insufficient_scope），请引导重新授权")
+    r.raise_for_status()
+    return r.json().get("response", "")
+
+def ai_scopes(access_token: str) -> dict:
+    """看看这个令牌能调用哪些 AI 端点"""
+    r = requests.get(AI_GATEWAY + "/ai/scopes",
+                     headers={"Authorization": f"Bearer {access_token}"}, timeout=15)
+    return r.json()</code></pre>
+            </div>
+
+            <div class="notice">
+                <span>💡</span>
+                <div>
+                    <b>令牌自检</b>：<code>GET https://hzyai-worker.nflshcchat.cc.cd/ai/scopes</code>（带 Bearer）会返回
+                    <code>{ scopes, canCall, endpoints }</code>，开发时先用它确认 scope 是否齐全，再去写业务代码。
+                    返回 <code>401 invalid_token</code> 说明令牌过期或被用户撤销，用 <code>refresh_token</code> 刷新或重新授权。
+                </div>
+            </div>
+        </div>
+
         <div class="card" id="errors">
-            <h2 class="card-title">⑥ 错误码</h2>
+            <h2 class="card-title">⑦ 错误码</h2>
             <p class="card-desc">接口返回 <code>{ "error": "…", "error_description": "…" }</code>，请按错误码给出准确提示。</p>
             <div class="table-wrap">
                 <table>
@@ -521,6 +636,8 @@ Content-Type: application/json
                         <tr><td class="mono">invalid_scope</td><td>未选择有效权限</td><td>在创建/编辑应用时至少勾选一个 scope</td></tr>
                         <tr><td class="mono">access_denied</td><td>用户拒绝授权，或用户已撤销授权</td><td>提示用户重新授权</td></tr>
                         <tr><td class="mono">invalid_token</td><td>访问令牌无效或已过期</td><td>用 refresh_token 刷新，或重新授权</td></tr>
+                        <tr><td class="mono">insufficient_scope</td><td>令牌没有调用该 AI 能力的 scope（如 ai:chat）</td><td>重新授权时勾选对应权限，或调用 /ai/scopes 自检</td></tr>
+                        <tr><td class="mono">missing_token</td><td>调用 AI 接口时没带 Authorization: Bearer</td><td>严格模式下必须带令牌；用 access_token 调用，而不是 client_secret</td></tr>
                         <tr><td class="mono">login_required</td><td>需要先登录 nflshcchat 账号</td><td>把用户引导到授权中心登录</td></tr>
                         <tr><td class="mono">client_suspended</td><td>应用已被管理员停用</td><td>联系主站管理员处理</td></tr>
                     </tbody>
@@ -529,7 +646,7 @@ Content-Type: application/json
         </div>
 
         <div class="card" id="security">
-            <h2 class="card-title">⑦ 安全建议</h2>
+            <h2 class="card-title">⑧ 安全建议</h2>
             <ul>
                 <li><b>开发者看不到密码</b>：任何接口都不返回 <code>password</code> / <code>password_hash</code>。</li>
                 <li><b>开发者不能操作主站账号</b>：项目内封禁只写入 <code>oauth_project_bans</code>，不影响用户在主站的状态；只有主站管理员能封禁/冻结主站账号。</li>
@@ -553,7 +670,11 @@ Content-Type: application/json
             { key: 'rooms', name: '群聊列表', fields: 'rooms[]（id / name / type）', sensitive: false },
             { key: 'friends', name: '好友列表', fields: 'friends[]（用户名数组）', sensitive: false },
             { key: 'messages', name: '消息内容', fields: 'messages[]（最近 50 条：id / roomId / content / timestamp）', sensitive: true },
-            { key: 'stats', name: '统计信息', fields: 'messageCount', sensitive: false }
+            { key: 'stats', name: '统计信息', fields: 'messageCount', sensitive: false },
+            { key: 'ai:chat', name: 'AI 对话', fields: '网关 /chat /vision /sizhi /bigmodel 等', sensitive: false, ai: true },
+            { key: 'ai:image', name: 'AI 绘图', fields: '网关 /image', sensitive: false, ai: true },
+            { key: 'ai:video', name: 'AI 视频', fields: '网关 /video', sensitive: true, ai: true },
+            { key: 'ai:stt', name: '语音转写与合成', fields: '网关 /stt /tts', sensitive: false, ai: true }
         ];
         var FIELD_MAP = {};
         FALLBACK_ROWS.forEach(function (r) { FIELD_MAP[r.key] = r; });
@@ -568,7 +689,7 @@ Content-Type: application/json
                     '<td class="mono">' + escapeHtml(s.key) + '</td>' +
                     '<td>' + escapeHtml(s.name || local.name || s.key) + '</td>' +
                     '<td class="mono" style="color:var(--text-secondary)">' + escapeHtml(fields) + '</td>' +
-                    '<td>' + (sensitive ? '<span class="badge badge-warn">敏感</span>' : '<span class="badge badge-muted">普通</span>') + '</td>' +
+                    '<td>' + (s.ai ? '<span class="badge" style="background:rgba(52,152,219,.16);color:#3498db">AI</span> ' : '') + (sensitive ? '<span class="badge badge-warn">敏感</span>' : '<span class="badge badge-muted">普通</span>') + '</td>' +
                     '</tr>';
             }).join('');
         }
