@@ -87,6 +87,7 @@
             transition: all .2s ease;
         }
         .chip:hover { border-color: var(--accent-color); color: var(--accent-color); transform: translateY(-1px); }
+        .chip-ai { border-color: rgba(52,152,219,.45); color: #3498db; }
         .chip-uri { font-family: "Consolas", "Courier New", monospace; font-size: 12px; }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
@@ -630,7 +631,8 @@ GET  /api/bot/messages?client_id=&client_secret=&room_id=&limit=50</pre>
 
             els.infoScopes.innerHTML = client.scopes.length
                 ? client.scopes.map(function (s) {
-                    return '<span class="chip">' + escapeHtml(s.name || s.key) + ' <span class="mono" style="opacity:.7">' +
+                    return '<span class="chip' + (s.ai ? ' chip-ai' : '') + '">' + (s.ai ? '🤖 ' : '') +
+                        escapeHtml(s.name || s.key) + ' <span class="mono" style="opacity:.7">' +
                         escapeHtml(s.key) + '</span></span>';
                 }).join('')
                 : '<span class="chip badge-muted">未申请权限</span>';
@@ -643,9 +645,10 @@ GET  /api/bot/messages?client_id=&client_secret=&room_id=&limit=50</pre>
             els.editScopeGrid.innerHTML = scopes.map(function (s) {
                 var checked = set[s.key] ? ' checked' : '';
                 var sens = s.sensitive ? '<em class="sens">敏感</em>' : '';
+                var aiTag = s.ai ? '<em class="sens" style="background:rgba(52,152,219,.16);color:#3498db;border-color:rgba(52,152,219,.45)">AI</em>' : '';
                 return '<label class="scope-item">' +
                     '<input type="checkbox" value="' + escapeHtml(s.key) + '"' + checked + '>' +
-                    '<span><span class="scope-name">' + escapeHtml(s.name || s.key) + sens + '</span>' +
+                    '<span><span class="scope-name">' + escapeHtml(s.name || s.key) + aiTag + sens + '</span>' +
                     '<span class="scope-desc">' + escapeHtml(s.desc || '') + '</span></span></label>';
             }).join('');
         }
